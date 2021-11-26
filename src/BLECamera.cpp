@@ -28,13 +28,11 @@ bool BLECamera::discover(uint16_t conn_handle)
 {
     // Call Base class discover
     VERIFY(BLEClientService::discover(conn_handle));
-    // VERIFY(_remoteNotify.discover());
 
     _conn_hdl = BLE_CONN_HANDLE_INVALID; // make as invalid until we found all chars
 
     // // Discover all characteristics
     Bluefruit.Discovery.discoverCharacteristic(conn_handle, _remoteCommand, _remoteNotify);
-    // Serial.println(_remoteNotify.discovered());
 
     VERIFY(_remoteCommand.discovered() && _remoteNotify.discovered());
 
@@ -45,31 +43,68 @@ bool BLECamera::discover(uint16_t conn_handle)
 
 void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
 {
-    //   varclr(&_last_kbd_report);
-    //   memcpy(&_last_kbd_report, data, len);
 
-    //   if ( _kbd_cb ) _kbd_cb(&_last_kbd_report);
+#if CFG_DEBUG
     Serial.println("Camera data: ");
     Serial.print("LEN: ");
     Serial.print(len);
-    Serial.print("  DATA: ");
+    Serial.print(" DATA: ");
     for (int n = 0; n < len; n++)
     {
         Serial.print(" ");
         Serial.print(data[n], HEX);
         Serial.print(" ");
     }
-    // Serial.write(data, len);
     Serial.write("\0\n");
     Serial.flush();
+#endif
+
+    if (len == 3)
+    {
+        if (data[0] == 0x02)
+        {
+            switch (data[1])
+            {
+            case 0x3F:
+                _focusStatus = data[2];
+                break;
+
+            case 0xA0:
+                _shutterStatus = data[2];
+                break;
+
+            case 0xD5:
+                _recordingStatus = data[2];
+                break;
+            }
+        }
+    }
 }
 
 bool BLECamera::enableNotify(void)
-{
+{   
+ 
+
     return _remoteNotify.enableNotify();
 }
 
 bool BLECamera::disableNotify(void)
 {
     return _remoteNotify.disableNotify();
+}
+
+bool BLECamera::ignorantTrigger(void)
+{
+
+    _remoteCommand.write16(0x0106);
+    delay(500);
+    _remoteCommand.write16(0x0107);
+    delay(500);
+    _remoteCommand.write16(0x0108);
+    delay(500);
+    _remoteCommand.write16(0x0109);
+    delay(500);
+    _remoteCommand.write16(0x0106);
+
+    return true;
 }

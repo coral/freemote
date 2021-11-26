@@ -9,12 +9,17 @@
 
 ## Camera back to device (0xFF02)
 
-3F focus
-0x02 3F 00 == ready
+#### 3F focus
 
+0x02 3F 00 == ready
 0x02 3F 20 == Focus acquired 
 
-A0 Picture
-0x02 A0 20 == Picture taken
+#### A0 Picture
 
+0x02 A0 20 == Picture taken
 0x02 A0 0 == Back from picture, ready
+
+#### D5 Recording
+
+0x02 D5 0 == Recording stopped
+0x02 D5 20 == Recording started

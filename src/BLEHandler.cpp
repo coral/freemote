@@ -52,7 +52,7 @@ void _scan_callback(ble_gap_evt_adv_report_t *report)
             }
             else
             {
-                // Camera is not in pairing mode so prob cannot connect.
+                // Camera is not in pairing mode so prob cannot try to pair.
             }
         }
     }
@@ -84,7 +84,7 @@ void _connection_secured_callback(uint16_t conn_handle)
     if (!conn->secured())
     {
         Serial.println("Not secure");
-        conn->removeBondKey();
+        //conn->removeBondKey();
         conn->requestPairing();
     }
     else
@@ -97,7 +97,7 @@ void _connection_secured_callback(uint16_t conn_handle)
         }
         else
         {
-            Serial.println("could not discover remote service");
+            Serial.println("Could not discover remote service");
             return;
         }
 

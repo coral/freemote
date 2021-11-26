@@ -18,9 +18,15 @@ public:
     bool enableNotify(void);
     bool disableNotify(void);
 
+    bool ignorantTrigger(void);
+
 protected:
     BLEClientCharacteristic _remoteCommand;
     BLEClientCharacteristic _remoteNotify;
+
+    uint8_t _shutterStatus; //A0
+    uint8_t _focusStatus; //3F
+    uint8_t _recordingStatus; //D5
 
     void _handle_camera_notification(uint8_t* data, uint16_t len);
 
