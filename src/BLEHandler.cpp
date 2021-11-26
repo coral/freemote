@@ -6,16 +6,26 @@ bool InitBLE(BLECamera &newcam)
 {
     _camera_ref = &newcam;
 
-    VERIFY_STATUS(Bluefruit.begin(0,1));
+    Bluefruit.begin(0,1);
 
     Bluefruit.setName("FREEMOTE");
 
-    VERIFY_STATUS(_camera_ref->begin());
+    _camera_ref->begin();
 
+    //Callbacks
     Bluefruit.Scanner.setRxCallback(_scan_callback);
     Bluefruit.Central.setConnectCallback(_connect_callback);
     Bluefruit.Central.setDisconnectCallback(_disconnect_callback);
+    Bluefruit.Security.setSecuredCallback(_connection_secured_callback);
 
+    Bluefruit.Scanner.restartOnDisconnect(true);
+    Bluefruit.Scanner.setInterval(160, 80);
+    Bluefruit.Scanner.useActiveScan(true);
+    Bluefruit.Scanner.start(0);
+
+    Serial.println("Started scanning");
+    
+    return true;
 }
 
 
@@ -72,7 +82,7 @@ void _connection_secured_callback(uint16_t conn_handle)
 
     if (!conn->secured())
     {
-        Serial.println("not secure");
+        Serial.println("Not secure");
     }
     else
     {
@@ -80,7 +90,7 @@ void _connection_secured_callback(uint16_t conn_handle)
 
         if (_camera_ref->discover(conn_handle))
         {
-            Serial.println("found service");
+            Serial.println("Found service");
         }
         else
         {
