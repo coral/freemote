@@ -10,17 +10,19 @@ bool InitBLE(BLECamera &newcam)
 
     Bluefruit.setName("FREEMOTE");
 
-    VERIFY(_camera_ref->begin());
-
     // Callbacks
     Bluefruit.Scanner.setRxCallback(_scan_callback);
     Bluefruit.Central.setConnectCallback(_connect_callback);
     Bluefruit.Central.setDisconnectCallback(_disconnect_callback);
     Bluefruit.Security.setSecuredCallback(_connection_secured_callback);
 
+    VERIFY(_camera_ref->begin());
+
+    Bluefruit.setConnLedInterval(250);
+
     Bluefruit.Scanner.restartOnDisconnect(true);
     Bluefruit.Scanner.setInterval(160, 80);
-    Bluefruit.Scanner.useActiveScan(true);
+    Bluefruit.Scanner.useActiveScan(false);
     Bluefruit.Scanner.start(0);
 
     Serial.println("Started scanning");
@@ -82,6 +84,8 @@ void _connection_secured_callback(uint16_t conn_handle)
     if (!conn->secured())
     {
         Serial.println("Not secure");
+        conn->removeBondKey();
+        conn->requestPairing();
     }
     else
     {
@@ -96,6 +100,8 @@ void _connection_secured_callback(uint16_t conn_handle)
             Serial.println("could not discover remote service");
             return;
         }
+
+        delay(500);
 
         // Connecting camera
         if (_camera_ref->enableNotify())

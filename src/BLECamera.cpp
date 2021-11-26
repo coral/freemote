@@ -7,21 +7,19 @@ BLECamera::BLECamera(void) : BLEClientService("8000FF00-FF00-FFFF-FFFF-FFFFFFFFF
 
 void camera_notify_cb(BLEClientCharacteristic *chr, uint8_t *data, uint16_t len)
 {
-    Serial.println("In notification");
     BLECamera &svc = (BLECamera &)chr->parentService();
     svc._handle_camera_notification(data, len);
-    Serial.println("Dispatching notification");
 }
 
 bool BLECamera::begin(void)
 {
     // Invoke base class begin()
-    VERIFY_STATUS(BLEClientService::begin());
+    VERIFY(BLEClientService::begin());
 
     _remoteCommand.begin(this);
-    _remoteNotify.begin(this);
 
     _remoteNotify.setNotifyCallback(camera_notify_cb);
+    _remoteNotify.begin(this);
 
     return true;
 }
@@ -30,20 +28,25 @@ bool BLECamera::discover(uint16_t conn_handle)
 {
     // Call Base class discover
     VERIFY(BLEClientService::discover(conn_handle));
+    //VERIFY(_remoteNotify.discover());
+
+
     _conn_hdl = BLE_CONN_HANDLE_INVALID; // make as invalid until we found all chars
 
-    // Discover all characteristics
-    Bluefruit.Discovery.discoverCharacteristic(conn_handle, _remoteCommand, _remoteNotify);
+    // // Discover all characteristics
+     Bluefruit.Discovery.discoverCharacteristic(conn_handle, _remoteCommand, _remoteNotify);
+    // Serial.println(_remoteNotify.discovered());
 
     VERIFY(_remoteCommand.discovered() && _remoteNotify.discovered());
 
-    _conn_hdl = conn_handle;
+     _conn_hdl = conn_handle;
+
+
     return true;
 }
 
 void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
 {
-    Serial.println("Recieved dispatched notification");
     //   varclr(&_last_kbd_report);
     //   memcpy(&_last_kbd_report, data, len);
 
