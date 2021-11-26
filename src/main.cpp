@@ -13,12 +13,15 @@ BLECamera camera;
 void setup()
 {
     pixel.begin();
-    pixel.setPixelColor(0, pixel.Color(0, 150, 0));
+    pixel.setPixelColor(0, pixel.Color(0, 0, 2));
     pixel.show();
 
     Serial.begin(115200);
     while (!Serial)
         delay(10);
+    
+    pixel.setPixelColor(0, pixel.Color(0, 10, 0));
+    pixel.show();
 
     if (!InitBLE(camera))
     {
@@ -30,6 +33,5 @@ void setup()
 void loop()
 {
     delay(5000);
-    Serial.println("Heartbeat");
     yield();
 }
