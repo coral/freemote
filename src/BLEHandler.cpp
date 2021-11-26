@@ -6,13 +6,13 @@ bool InitBLE(BLECamera &newcam)
 {
     _camera_ref = &newcam;
 
-    Bluefruit.begin(0,1);
+    Bluefruit.begin(0, 1);
 
     Bluefruit.setName("FREEMOTE");
 
-    _camera_ref->begin();
+    VERIFY(_camera_ref->begin());
 
-    //Callbacks
+    // Callbacks
     Bluefruit.Scanner.setRxCallback(_scan_callback);
     Bluefruit.Central.setConnectCallback(_connect_callback);
     Bluefruit.Central.setDisconnectCallback(_disconnect_callback);
@@ -24,10 +24,9 @@ bool InitBLE(BLECamera &newcam)
     Bluefruit.Scanner.start(0);
 
     Serial.println("Started scanning");
-    
+
     return true;
 }
-
 
 void _scan_callback(ble_gap_evt_adv_report_t *report)
 {
@@ -98,5 +97,14 @@ void _connection_secured_callback(uint16_t conn_handle)
             return;
         }
 
+        // Connecting camera
+        if (_camera_ref->enableNotify())
+        {
+            Serial.println("Ready to control camera");
+        }
+        else
+        {
+            Serial.println("Could not enable notifications");
+        }
     }
 }
