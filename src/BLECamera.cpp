@@ -96,15 +96,17 @@ bool BLECamera::disableNotify(void)
 bool BLECamera::ignorantTrigger(void)
 {
 
-    _remoteCommand.write16(0x0106);
-    delay(500);
-    _remoteCommand.write16(0x0107);
-    delay(500);
-    _remoteCommand.write16(0x0108);
-    delay(500);
-    _remoteCommand.write16(0x0109);
-    delay(500);
-    _remoteCommand.write16(0x0106);
+    //Focus
+    _remoteCommand.write16_resp(0x0701);
+
+    //Shutter
+    _remoteCommand.write16_resp(0x0801);
+
+    //Release back to focus
+    _remoteCommand.write16_resp(0x0901);
+
+    //Let go?
+    _remoteCommand.write16_resp(0x0601);
 
     return true;
 }

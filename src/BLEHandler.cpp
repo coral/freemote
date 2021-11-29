@@ -6,6 +6,7 @@ bool InitBLE(BLECamera &newcam)
 {
     _camera_ref = &newcam;
 
+
     Bluefruit.begin(0, 1);
 
     Bluefruit.setName("FREEMOTE");
