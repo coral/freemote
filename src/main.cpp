@@ -15,7 +15,7 @@ BLECamera camera;
 static InputDebounce triggerButton;
 
 void triggerButton_pressedCallback(uint8_t pinIn) {
-    Serial.println("pressed");
+    Serial.println("Camera shutter pressed.");
     camera.trigger();
 }
 

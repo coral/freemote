@@ -5,6 +5,11 @@
 #include "BLEClientCharacteristic.h"
 #include "BLEClientService.h"
 
+constexpr uint16_t SHUTTER_RELEASED = 0x0601;
+constexpr uint16_t PRESS_TO_FOCUS = 0x0701;
+constexpr uint16_t HOLD_FOCUS = 0x0801;
+constexpr uint16_t TAKE_PICTURE = 0x0901;
+
 class BLECamera : public BLEClientService
 {
 public:
@@ -20,7 +25,7 @@ public:
 
     bool trigger(void);
 
-    bool _ignorantTrigger(void);
+    //bool _ignorantTrigger(void);
 
 protected:
     BLEClientCharacteristic _remoteCommand;

@@ -97,17 +97,36 @@ bool BLECamera::disableNotify(void)
 bool BLECamera::trigger(void)
 {
     // hack until I get this to work
-    uint32_t timeout = millis() + 100;
+    uint32_t timeout = millis() + 5000;
 
     //Reset focus status
     _focusStatus = 0x00;
 
     // Focus
-    _remoteCommand.write16_resp(0x0701);
+    _remoteCommand.write16_resp(PRESS_TO_FOCUS);
 
     while (_focusStatus != 0x20)
     {
-        delay(1);
+        yield();
+
+        if (timeout < millis())
+        {
+            return false;
+        }
+    }
+    
+    // Release back to focus
+    _remoteCommand.write16_resp(HOLD_FOCUS);
+
+    //Reset focus status
+    _shutterStatus = 0x00;
+
+    // Shutter
+    _remoteCommand.write16_resp(TAKE_PICTURE);
+
+       while (_shutterStatus != 0x20)
+    {
+        yield();
 
         if (timeout < millis())
         {
@@ -115,36 +134,32 @@ bool BLECamera::trigger(void)
         }
     }
 
-    // Shutter
-    _remoteCommand.write16_resp(0x0801);
-
-    delay(5);
-
     // Release back to focus
-    _remoteCommand.write16_resp(0x0901);
+    _remoteCommand.write16_resp(HOLD_FOCUS);
 
-    delay(5);
+    delay(10);
+
     // Let go?
-    _remoteCommand.write16_resp(0x0601);
+    _remoteCommand.write16_resp(SHUTTER_RELEASED);
 
     return true;
 }
 
 // This just sends the commands in order to test, doesn't work if the camera struggles to focus.
-bool BLECamera::_ignorantTrigger(void)
-{
+// bool BLECamera::_ignorantTrigger(void)
+// {
 
-    // Focus
-    _remoteCommand.write16_resp(0x0701);
+//     // Focus
+//     _remoteCommand.write16_resp(0x0701);
 
-    // Shutter
-    _remoteCommand.write16_resp(0x0901);
+//     // Shutter
+//     _remoteCommand.write16_resp(0x0901);
 
-    // Release back to focus
-    _remoteCommand.write16_resp(0x0801);
+//     // Release back to focus
+//     _remoteCommand.write16_resp(0x0801);
 
-    // Let go?
-    _remoteCommand.write16_resp(0x0601);
+//     // Let go?
+//     _remoteCommand.write16_resp(0x0601);
 
-    return true;
-}
+//     return true;
+// }
