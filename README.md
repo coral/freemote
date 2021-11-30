@@ -1,6 +1,8 @@
 # Freemote - Sony Alpha (a7) BLE Remote implemented on the NRF52840
 
-This is a BLE implementation for the NRF52840 that acts like a BLE remote for the Sony Alpha series that support the BLE remotes similar to [JJC-RMT-P1BT](https://www.amazon.com/JJC-RMT-P1BT-Bluetooth-Wireless-Commander/dp/B08CR1QPKQ). It's not perfect but does work.
+This is a BLE implementation for the NRF52840 that acts like a BLE remote for the Sony Alpha series that support the BLE remotes similar to [JJC-RMT-P1BT](https://www.amazon.com/JJC-RMT-P1BT-Bluetooth-Wireless-Commander/dp/B08CR1QPKQ). Specifically this code runs on the [Adafruit NRF52840 Express](https://www.adafruit.com/product/4062) which costs about $25. The repo is a [PlatformIO](https://platformio.org/) project meaning if you open this it should handle dependencies and the toolchain to program your NRF52840.
+
+Currently the code will try to pair with whatever camera is open for pairing (described further down) and save that pairing and then automatically reconnect to that camera when avaliable. There is prob better ways of solving this but yeah, took the easy route here.
 
 
 ## Sony Alpha BLE Remote Protocol
