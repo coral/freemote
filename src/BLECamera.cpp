@@ -77,14 +77,15 @@ void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
                 _recordingStatus = data[2];
                 break;
             }
+
+            _last_message = micros();
+
         }
     }
 }
 
 bool BLECamera::enableNotify(void)
-{   
- 
-
+{
     return _remoteNotify.enableNotify();
 }
 
@@ -93,19 +94,56 @@ bool BLECamera::disableNotify(void)
     return _remoteNotify.disableNotify();
 }
 
-bool BLECamera::ignorantTrigger(void)
+bool BLECamera::trigger(void)
 {
+    // hack until I get this to work
+    uint32_t timeout = millis() + 100;
 
-    //Focus
+    //Reset focus status
+    _focusStatus = 0x00;
+
+    // Focus
     _remoteCommand.write16_resp(0x0701);
 
-    //Shutter
+    while (_focusStatus != 0x20)
+    {
+        delay(1);
+
+        if (timeout < millis())
+        {
+            return false;
+        }
+    }
+
+    // Shutter
     _remoteCommand.write16_resp(0x0801);
 
-    //Release back to focus
+    delay(5);
+
+    // Release back to focus
     _remoteCommand.write16_resp(0x0901);
 
-    //Let go?
+    delay(5);
+    // Let go?
+    _remoteCommand.write16_resp(0x0601);
+
+    return true;
+}
+
+// This just sends the commands in order to test, doesn't work if the camera struggles to focus.
+bool BLECamera::_ignorantTrigger(void)
+{
+
+    // Focus
+    _remoteCommand.write16_resp(0x0701);
+
+    // Shutter
+    _remoteCommand.write16_resp(0x0901);
+
+    // Release back to focus
+    _remoteCommand.write16_resp(0x0801);
+
+    // Let go?
     _remoteCommand.write16_resp(0x0601);
 
     return true;

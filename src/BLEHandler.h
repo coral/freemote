@@ -5,6 +5,7 @@
 #include <array>
 #include <algorithm>
 
+
 //0x2D01 = Sony Camera Corporation Identifer
 //0x3000 = This is a camera
 //0x64 = Protocol version ?

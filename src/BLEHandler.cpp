@@ -1,6 +1,7 @@
 #include "BLEHandler.h"
 
 BLECamera *_camera_ref;
+bool _attempt_pairing = false;
 
 bool InitBLE(BLECamera &newcam)
 {
@@ -73,16 +74,14 @@ void _scan_callback(ble_gap_evt_adv_report_t *report)
             // Check if this is a Sony camera
             if (is_camera(data))
             {
-                //Check if camera wants to pair
+                // Check if camera wants to pair
                 if (pairing_status(data))
                 {
-                    Serial.println("Found the camera, connecting.");
-                    Bluefruit.Central.connect(report);
+                    Serial.println("Camera wants to pair, lets do it");
+                    _attempt_pairing = true;
                 }
-                else
-                {
-                    Serial.println("NO PAIR 4Head");
-                }
+
+                Bluefruit.Central.connect(report);
             }
         }
     }
@@ -94,8 +93,9 @@ void _connect_callback(uint16_t conn_handle)
     BLEConnection *conn = Bluefruit.Connection(conn_handle);
 
     Serial.println("Connected to device.");
-
-    conn->requestPairing();
+    if (_attempt_pairing == true) {
+        conn->requestPairing();
+    }
 }
 
 void _disconnect_callback(uint16_t conn_handle, uint8_t reason)
@@ -105,6 +105,7 @@ void _disconnect_callback(uint16_t conn_handle, uint8_t reason)
 
     Serial.print("Disconnected, reason = 0x");
     Serial.println(reason, HEX);
+    Bluefruit._setConnLed(true);
 }
 
 void _connection_secured_callback(uint16_t conn_handle)
@@ -136,6 +137,7 @@ void _connection_secured_callback(uint16_t conn_handle)
         if (_camera_ref->enableNotify())
         {
             Serial.println("Ready to control camera");
+            Bluefruit._setConnLed(false);
         }
         else
         {

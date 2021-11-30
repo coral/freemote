@@ -16,7 +16,7 @@ static InputDebounce triggerButton;
 
 void triggerButton_pressedCallback(uint8_t pinIn) {
     Serial.println("pressed");
-    camera.ignorantTrigger();
+    camera.trigger();
 }
 
 
