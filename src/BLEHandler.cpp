@@ -6,7 +6,6 @@ bool InitBLE(BLECamera &newcam)
 {
     _camera_ref = &newcam;
 
-
     Bluefruit.begin(0, 1);
 
     Bluefruit.setName("FREEMOTE");
@@ -31,29 +30,59 @@ bool InitBLE(BLECamera &newcam)
     return true;
 }
 
+// is_camera returns true if this is a sony cam
+bool is_camera(std::array<uint8_t, 16> data)
+{
+    return std::equal(lookup.begin(), lookup.end(), data.begin());
+}
+
+// pairing_status returns true if camera is open for pairing, false otherwise
+bool pairing_status(std::array<uint8_t, 16> data)
+{
+
+    // We are certain this is a camera, lets check for pairing status
+    auto it = std::find(data.begin(), data.end(), 0x22);
+    if (it != data.end())
+    {
+        if (data.at((it - data.begin()) + 1) == 0xEF)
+        {
+            // Camera is ready to pair
+            return true;
+        }
+        else
+        {
+            // Camera does not want to pair (yet)
+            return false;
+        }
+    }
+}
+
 void _scan_callback(ble_gap_evt_adv_report_t *report)
 {
-    uint8_t data[16];
+    std::array<uint8_t, 16> data;
     uint8_t bufferSize;
 
-    if (report->data.len >= sizeof(lookup))
+    if (report->data.len >= lookup.size())
     {
 
-        bufferSize = Bluefruit.Scanner.parseReportByType(report, 0xff, data, sizeof(data));
+        bufferSize = Bluefruit.Scanner.parseReportByType(report, 0xff, data.data(), data.size());
 
-        if (bufferSize >= sizeof(lookup))
+        if (bufferSize >= lookup.size())
         {
 
-            if (memcmp(&lookup, data, sizeof(lookup)) == 0)
+            // Check if this is a Sony camera
+            if (is_camera(data))
             {
-                // we matched
-                Serial.println("Found the camera, connecting.");
-                Bluefruit.Central.connect(report);
-                Serial.flush();
-            }
-            else
-            {
-                // Camera is not in pairing mode so prob cannot try to pair.
+                //Check if camera wants to pair
+                if (pairing_status(data))
+                {
+                    Serial.println("Found the camera, connecting.");
+                    Bluefruit.Central.connect(report);
+                }
+                else
+                {
+                    Serial.println("NO PAIR 4Head");
+                }
             }
         }
     }
@@ -85,7 +114,6 @@ void _connection_secured_callback(uint16_t conn_handle)
     if (!conn->secured())
     {
         Serial.println("Not secure");
-        //conn->removeBondKey();
         conn->requestPairing();
     }
     else
