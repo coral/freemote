@@ -1,11 +1,11 @@
 #include "BLEHandler.h"
 
-BLECamera *_camera_ref;
+//BLECamera *_camera_ref;
 bool _attempt_pairing = false;
 
-bool InitBLE(BLECamera &newcam)
+bool  BLEHandler::InitBLE(BLECamera *newcam)
 {
-    _camera_ref = &newcam;
+    _camera_ref = newcam;
 
     Bluefruit.begin(0, 1);
 
@@ -31,34 +31,7 @@ bool InitBLE(BLECamera &newcam)
     return true;
 }
 
-// is_camera returns true if this is a sony cam
-bool is_camera(std::array<uint8_t, 16> data)
-{
-    return std::equal(lookup.begin(), lookup.end(), data.begin());
-}
-
-// pairing_status returns true if camera is open for pairing, false otherwise
-bool pairing_status(std::array<uint8_t, 16> data)
-{
-
-    // We are certain this is a camera, lets check for pairing status
-    auto it = std::find(data.begin(), data.end(), 0x22);
-    if (it != data.end())
-    {
-        if (data.at((it - data.begin()) + 1) == 0xEF)
-        {
-            // Camera is ready to pair
-            return true;
-        }
-        else
-        {
-            // Camera does not want to pair (yet)
-            return false;
-        }
-    }
-}
-
-void _scan_callback(ble_gap_evt_adv_report_t *report)
+void BLEHandler::_scan_callback(ble_gap_evt_adv_report_t *report)
 {
     std::array<uint8_t, 16> data;
     uint8_t bufferSize;
@@ -72,10 +45,10 @@ void _scan_callback(ble_gap_evt_adv_report_t *report)
         {
 
             // Check if this is a Sony camera
-            if (is_camera(data))
+            if (_camera_ref->is_camera(data))
             {
                 // Check if camera wants to pair
-                if (pairing_status(data))
+                if (_camera_ref->pairing_status(data))
                 {
                     Serial.println("Camera wants to pair, lets do it");
                     _attempt_pairing = true;
@@ -88,17 +61,18 @@ void _scan_callback(ble_gap_evt_adv_report_t *report)
     Bluefruit.Scanner.resume();
 }
 
-void _connect_callback(uint16_t conn_handle)
+void BLEHandler::_connect_callback(uint16_t conn_handle)
 {
     BLEConnection *conn = Bluefruit.Connection(conn_handle);
 
     Serial.println("Connected to device.");
-    if (_attempt_pairing == true) {
+    if (_attempt_pairing == true)
+    {
         conn->requestPairing();
     }
 }
 
-void _disconnect_callback(uint16_t conn_handle, uint8_t reason)
+void BLEHandler::_disconnect_callback(uint16_t conn_handle, uint8_t reason)
 {
     (void)conn_handle;
     (void)reason;
@@ -108,7 +82,7 @@ void _disconnect_callback(uint16_t conn_handle, uint8_t reason)
     Bluefruit._setConnLed(true);
 }
 
-void _connection_secured_callback(uint16_t conn_handle)
+void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
 {
     BLEConnection *conn = Bluefruit.Connection(conn_handle);
 

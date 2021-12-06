@@ -145,6 +145,31 @@ bool BLECamera::trigger(void)
     return true;
 }
 
+// is_camera returns true if this is a sony cam
+bool BLECamera::is_camera(std::array<uint8_t, 16> data)
+{
+    return std::equal(lookup.begin(), lookup.end(), data.begin());
+}
+
+// pairing_status returns true if camera is open for pairing, false otherwise
+bool BLECamera::pairing_status(std::array<uint8_t, 16> data)
+{
+
+    // We are certain this is a camera, lets check for pairing status
+    auto it = std::find(data.begin(), data.end(), 0x22);
+    if (it != data.end() && (it + 1) != data.end())
+    {
+        if (*(it + 1) == 0xEF)
+        {
+            // Camera is ready to pair
+            return true;
+        }
+    }
+
+    //camera does not want to pair
+    return false;
+}
+
 // This just sends the commands in order to test, doesn't work if the camera struggles to focus.
 // bool BLECamera::_ignorantTrigger(void)
 // {

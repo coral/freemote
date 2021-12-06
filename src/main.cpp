@@ -11,6 +11,7 @@
 Adafruit_NeoPixel pixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 BLECamera camera;
+BLEHandler handler;
 
 static InputDebounce triggerButton;
 
@@ -39,7 +40,7 @@ void setup()
     pixel.setPixelColor(0, pixel.Color(0, 10, 0));
     pixel.show();
 
-    if (!InitBLE(camera))
+    if (!handler.InitBLE(&camera))
     {
         pixel.setPixelColor(0, pixel.Color(255, 0, 0));
         pixel.show();

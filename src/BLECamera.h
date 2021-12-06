@@ -4,11 +4,27 @@
 #include "BLECharacteristic.h"
 #include "BLEClientCharacteristic.h"
 #include "BLEClientService.h"
+#include <array>
+#include <algorithm>
 
 constexpr uint16_t SHUTTER_RELEASED = 0x0601;
 constexpr uint16_t PRESS_TO_FOCUS = 0x0701;
 constexpr uint16_t HOLD_FOCUS = 0x0801;
 constexpr uint16_t TAKE_PICTURE = 0x0901;
+
+//0x2D01 = Sony Camera Corporation Identifer
+//0x3000 = This is a camera
+//0x64 = Protocol version ?
+//0x00 = ??
+constexpr std::array<uint8_t, 6> lookup = {0x2D, 0x01, 0x03, 0x00, 0x64, 0x00};
+
+//ASCII Model Code E-mount cameras 'E1', A-mount 'A1'.
+constexpr std::array<uint8_t, 2> model_code  = {0x45, 0x31};
+
+//Indicates if camera is open to pair
+//0x22 indicate tag, 0xEF pairing (with bluetooth remote), 0x00 end
+constexpr std::array<uint8_t, 3> pairing = {0x22, 0xEF, 0x00};
+
 
 class BLECamera : public BLEClientService
 {
@@ -25,7 +41,12 @@ public:
 
     bool trigger(void);
 
+    //Faciliates extracting information from manufacturer data
+    bool is_camera(std::array<uint8_t, 16> data);
+    bool pairing_status(std::array<uint8_t, 16> data);
+
     //bool _ignorantTrigger(void);
+
 
 protected:
     BLEClientCharacteristic _remoteCommand;
