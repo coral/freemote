@@ -11,6 +11,8 @@ bool  BLEHandler::InitBLE(BLECamera *newcam)
 
     Bluefruit.setName("FREEMOTE");
 
+    bond_clear_all();
+
     // Callbacks
     Bluefruit.Scanner.setRxCallback(_scan_callback);
     Bluefruit.Central.setConnectCallback(_connect_callback);
