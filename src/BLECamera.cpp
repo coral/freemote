@@ -148,7 +148,7 @@ bool BLECamera::trigger(void)
 // is_camera returns true if this is a sony cam
 bool BLECamera::is_camera(std::array<uint8_t, 16> data)
 {
-    return std::equal(lookup.begin(), lookup.end(), data.begin());
+    return std::equal(CAMERA_MANUFACTURER_LOOKUP.begin(), CAMERA_MANUFACTURER_LOOKUP.end(), data.begin());
 }
 
 // pairing_status returns true if camera is open for pairing, false otherwise

@@ -16,14 +16,14 @@ constexpr uint16_t TAKE_PICTURE = 0x0901;
 //0x3000 = This is a camera
 //0x64 = Protocol version ?
 //0x00 = ??
-constexpr std::array<uint8_t, 6> lookup = {0x2D, 0x01, 0x03, 0x00, 0x64, 0x00};
+constexpr std::array<uint8_t, 6> CAMERA_MANUFACTURER_LOOKUP = {0x2D, 0x01, 0x03, 0x00, 0x64, 0x00};
 
 //ASCII Model Code E-mount cameras 'E1', A-mount 'A1'.
-constexpr std::array<uint8_t, 2> model_code  = {0x45, 0x31};
+constexpr std::array<uint8_t, 2> CAMERA_MODEL_CODE  = {0x45, 0x31};
 
 //Indicates if camera is open to pair
 //0x22 indicate tag, 0xEF pairing (with bluetooth remote), 0x00 end
-constexpr std::array<uint8_t, 3> pairing = {0x22, 0xEF, 0x00};
+constexpr std::array<uint8_t, 3> CAMERA_PAIRING_TAG = {0x22, 0xEF, 0x00};
 
 
 class BLECamera : public BLEClientService

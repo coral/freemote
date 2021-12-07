@@ -1,17 +1,15 @@
 #include "BLEHandler.h"
 
-//BLECamera *_camera_ref;
-bool _attempt_pairing = false;
 
 bool  BLEHandler::InitBLE(BLECamera *newcam)
 {
+    _attempt_pairing = false;
     _camera_ref = newcam;
 
     Bluefruit.begin(0, 1);
 
     Bluefruit.setName("FREEMOTE");
 
-    bond_clear_all();
 
     // Callbacks
     Bluefruit.Scanner.setRxCallback(_scan_callback);
@@ -38,12 +36,12 @@ void BLEHandler::_scan_callback(ble_gap_evt_adv_report_t *report)
     std::array<uint8_t, 16> data;
     uint8_t bufferSize;
 
-    if (report->data.len >= lookup.size())
+    if (report->data.len >= CAMERA_MANUFACTURER_LOOKUP.size())
     {
 
         bufferSize = Bluefruit.Scanner.parseReportByType(report, 0xff, data.data(), data.size());
 
-        if (bufferSize >= lookup.size())
+        if (bufferSize >= CAMERA_MANUFACTURER_LOOKUP.size())
         {
 
             // Check if this is a Sony camera

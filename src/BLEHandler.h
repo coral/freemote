@@ -18,4 +18,6 @@ class BLEHandler
         static void _disconnect_callback(uint16_t conn_handle, uint8_t reason);
         static void _connection_secured_callback(uint16_t conn_handle);
 
+        static inline bool _attempt_pairing;
+
 };
