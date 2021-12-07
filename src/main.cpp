@@ -1,14 +1,11 @@
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
 #include "BLECamera.h"
 #include "BLEHandler.h"
+#include "RemoteStatus.h"
 #include "InputDebounce.h"
 
-#define PIN PIN_NEOPIXEL
-#define NUMPIXELS 1
 #define BUTTON_PIN 7
 
-Adafruit_NeoPixel pixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 BLECamera camera;
 BLEHandler handler;
@@ -23,27 +20,26 @@ void triggerButton_pressedCallback(uint8_t pinIn) {
 
 void setup()
 {
-    pixel.begin();
-    pixel.setPixelColor(0, pixel.Color(0, 0, 2));
-    pixel.show();
+    RemoteStatus *rs = rs->access();
+    rs->set(Status::BOOT);
 
     Serial.begin(115200);
-
     pinMode(BUTTON_PIN, INPUT);
 
 
 #if CFG_DEBUG
+    rs->set(Status::WAIT_FOR_SERIAL);
     while (!Serial)
         delay(10);
 #endif
 
-    pixel.setPixelColor(0, pixel.Color(0, 10, 0));
-    pixel.show();
+    // pixel.setPixelColor(0, pixel.Color(0, 10, 0));
+    // pixel.show();
 
     if (!handler.InitBLE(&camera))
     {
-        pixel.setPixelColor(0, pixel.Color(255, 0, 0));
-        pixel.show();
+        // pixel.setPixelColor(0, pixel.Color(255, 0, 0));
+        // pixel.show();
     }
 
     triggerButton.registerCallbacks(triggerButton_pressedCallback, NULL, NULL, NULL);
