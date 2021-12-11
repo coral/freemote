@@ -1,4 +1,5 @@
-#include <Adafruit_NeoPixel.h>
+#define FASTLED_USE_GLOBAL_BRIGHTNESS 1
+#include <FastLED.h>
 
 #pragma once
 
@@ -16,6 +17,20 @@ enum Status
 
     WAIT_FOR_SERIAL,
     DO_NOT_USE,
+};
+
+class Color
+{
+public:
+    void set(uint8_t nr, uint8_t ng, uint8_t nb)
+    {
+        r = nr;
+        g = ng;
+        b = nb;
+    }
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
 };
 
 class RemoteStatus
@@ -38,11 +53,12 @@ private:
     void update();
     void resolveColor(Status s);
 
-    Adafruit_NeoPixel statusLed;
+    CRGB leds[1];
+
 
     bool updateColor;
-    uint32_t primaryColor;
-    uint32_t secondaryColor;
+    Color primaryColor;
+    Color secondaryColor;
     bool alternate;
     bool phase;
     uint32_t speed;
@@ -53,18 +69,4 @@ private:
     {
         instance->update();
     }
-};
-
-class Color
-{
-public:
-    void set(uint8_t nr, uint8_t ng, uint8_t nb)
-    {
-        r = nr;
-        g = ng;
-        b = nb;
-    }
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
 };

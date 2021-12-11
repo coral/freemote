@@ -1,11 +1,9 @@
 #include "RemoteStatus.h"
 
-RemoteStatus::RemoteStatus(void) : statusLed(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800)
+RemoteStatus::RemoteStatus(void)
 {
-    statusLed.begin();
+    FastLED.addLeds<NEOPIXEL, PIN_NEOPIXEL>(leds, 1);
     speed = 100;
-    primaryColor = 0;
-    secondaryColor = 0;
     set(NONE);
 
     xTaskCreate(&update_wrapper, "update", 256, NULL, TASK_PRIO_LOW, &statusLoopHandle);
@@ -24,9 +22,8 @@ void RemoteStatus::update()
         delay(speed);
         if (updateColor)
         {
-            statusLed.setPixelColor(0, primaryColor);
-            statusLed.show();
-
+            leds[0] = CRGB(primaryColor.r, primaryColor.g, primaryColor.b);
+            FastLED.show();
             updateColor = false;
         }
 
@@ -34,16 +31,15 @@ void RemoteStatus::update()
         {
             if (!phase)
             {
-                statusLed.setPixelColor(0, primaryColor);
-                statusLed.show();
+                leds[0] = CRGB(primaryColor.r, primaryColor.g, primaryColor.b);
                 phase = true;
             }
             else
             {
-                statusLed.setPixelColor(0, secondaryColor);
-                statusLed.show();
+                leds[0] = CRGB(secondaryColor.r, secondaryColor.g, secondaryColor.b);
                 phase = false;
             }
+            FastLED.show();
         }
     }
 }
@@ -96,13 +92,15 @@ void RemoteStatus::resolveColor(Status s)
         break;
     // Deb
     case WAIT_FOR_SERIAL:
-        prim.set(0, 255, 255);
+        prim.set(0, 10, 10);
         break;
     case DO_NOT_USE:
         prim.set(0, 0, 0);
         break;
     };
 
-    primaryColor = statusLed.Color(prim.r, prim.g, prim.b);
-    secondaryColor = statusLed.Color(sec.r, sec.g, sec.b);
+    primaryColor = prim;
+    secondaryColor = sec;
+    // primaryColor = statusLed.Color(prim.r, prim.g, prim.b);
+    // secondaryColor = statusLed.Color(sec.r, sec.g, sec.b);
 }
