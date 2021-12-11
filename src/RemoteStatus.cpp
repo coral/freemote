@@ -54,6 +54,7 @@ void RemoteStatus::resolveColor(Status s)
 
     switch (s)
     {
+    //General
     case NONE:
         prim.set(0, 0, 0);
         break;
@@ -66,6 +67,8 @@ void RemoteStatus::resolveColor(Status s)
         alternate = true;
         speed = 100;
         break;
+    
+    //Connection
     case CONNECTING:
         prim.set(0, 0, 255);
         sec.set(0, 0, 2);
@@ -81,6 +84,8 @@ void RemoteStatus::resolveColor(Status s)
         alternate = true;
         speed = 800;
         break;
+    
+    //Usage
     case READY:
         prim.set(0, 128, 0);
         break;
@@ -90,7 +95,8 @@ void RemoteStatus::resolveColor(Status s)
         alternate = true;
         speed = 100;
         break;
-    // Deb
+
+    // Debug
     case WAIT_FOR_SERIAL:
         prim.set(0, 10, 10);
         break;
@@ -101,6 +107,4 @@ void RemoteStatus::resolveColor(Status s)
 
     primaryColor = prim;
     secondaryColor = sec;
-    // primaryColor = statusLed.Color(prim.r, prim.g, prim.b);
-    // secondaryColor = statusLed.Color(sec.r, sec.g, sec.b);
 }
