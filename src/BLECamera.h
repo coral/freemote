@@ -6,6 +6,7 @@
 #include "BLEClientService.h"
 #include <array>
 #include <algorithm>
+#include "RemoteStatus.h"
 
 constexpr uint16_t SHUTTER_RELEASED = 0x0601;
 constexpr uint16_t PRESS_TO_FOCUS = 0x0701;
@@ -62,4 +63,7 @@ protected:
     void _handle_camera_notification(uint8_t* data, uint16_t len);
 
     friend void camera_notify_cb(BLEClientCharacteristic* chr, uint8_t* data, uint16_t len);
+
+private:
+    RemoteStatus *rs;
 };

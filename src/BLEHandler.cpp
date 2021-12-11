@@ -1,8 +1,10 @@
 #include "BLEHandler.h"
 
+RemoteStatus *rs = rs->access();
 
 bool  BLEHandler::InitBLE(BLECamera *newcam)
 {
+
     _attempt_pairing = false;
     _camera_ref = newcam;
 
@@ -27,6 +29,8 @@ bool  BLEHandler::InitBLE(BLECamera *newcam)
     Bluefruit.Scanner.start(0);
 
     Serial.println("Started scanning");
+
+    rs->set(Status::CONNECTING);
 
     return true;
 }
@@ -80,6 +84,7 @@ void BLEHandler::_disconnect_callback(uint16_t conn_handle, uint8_t reason)
     Serial.print("Disconnected, reason = 0x");
     Serial.println(reason, HEX);
     Bluefruit._setConnLed(true);
+    rs->set(Status::CONNECTION_LOST);
 }
 
 void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
@@ -94,6 +99,7 @@ void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
     else
     {
         Serial.println("Secured");
+        rs->set(Status::CONNECTED);
 
         if (_camera_ref->discover(conn_handle))
         {

@@ -3,7 +3,7 @@
 #pragma once
 
 enum Status
-{   
+{
     NONE,
     BOOT,
     ERROR,
@@ -20,14 +20,14 @@ enum Status
 
 class RemoteStatus
 {
-    static inline RemoteStatus *instance;
+    static inline RemoteStatus *instance = nullptr;
 
     RemoteStatus(void);
 
 public:
     static RemoteStatus *access()
     {
-        if (!instance)
+        if (instance == nullptr)
             instance = new RemoteStatus;
         return instance;
     }
@@ -35,10 +35,36 @@ public:
     void set(Status s);
 
 private:
-
-    void update(void);
+    void update();
+    void resolveColor(Status s);
 
     Adafruit_NeoPixel statusLed;
-    Status currentStatus;
-    Status newStatus;
+
+    bool updateColor;
+    uint32_t primaryColor;
+    uint32_t secondaryColor;
+    bool alternate;
+    bool phase;
+    uint32_t speed;
+
+    TaskHandle_t statusLoopHandle;
+
+    static void update_wrapper(void *arg)
+    {
+        instance->update();
+    }
+};
+
+class Color
+{
+public:
+    void set(uint8_t nr, uint8_t ng, uint8_t nb)
+    {
+        r = nr;
+        g = ng;
+        b = nb;
+    }
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
 };

@@ -6,7 +6,6 @@
 
 #define BUTTON_PIN 7
 
-
 BLECamera camera;
 BLEHandler handler;
 
@@ -33,13 +32,10 @@ void setup()
         delay(10);
 #endif
 
-    // pixel.setPixelColor(0, pixel.Color(0, 10, 0));
-    // pixel.show();
 
     if (!handler.InitBLE(&camera))
     {
-        // pixel.setPixelColor(0, pixel.Color(255, 0, 0));
-        // pixel.show();
+        rs->set(Status::ERROR);
     }
 
     triggerButton.registerCallbacks(triggerButton_pressedCallback, NULL, NULL, NULL);

@@ -3,6 +3,7 @@
 
 BLECamera::BLECamera(void) : BLEClientService("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF"), _remoteCommand(0xFF01), _remoteNotify(0xFF02)
 {
+    rs = rs->access();
 }
 
 void camera_notify_cb(BLEClientCharacteristic *chr, uint8_t *data, uint16_t len)
