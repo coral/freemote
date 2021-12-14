@@ -14,6 +14,7 @@ enum Status
 
     READY,
     FOCUS_ACQUIRED,
+    SHUTTER,
 
     WAIT_FOR_SERIAL,
     DO_NOT_USE,

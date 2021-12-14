@@ -68,10 +68,30 @@ void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
             {
             case 0x3F:
                 _focusStatus = data[2];
+
+                if (_focusStatus == 0x20)
+                {
+                    rs->set(Status::FOCUS_ACQUIRED);
+                }
+                else
+                {
+                    rs->set(Status::READY);
+                }
+
                 break;
 
             case 0xA0:
                 _shutterStatus = data[2];
+
+                if (_shutterStatus == 0x20)
+                {
+                    rs->set(Status::SHUTTER);
+                }
+                else
+                {
+                    rs->set(Status::READY);
+                }
+
                 break;
 
             case 0xD5:
@@ -80,7 +100,6 @@ void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
             }
 
             _last_message = micros();
-
         }
     }
 }
@@ -100,38 +119,44 @@ bool BLECamera::trigger(void)
     // hack until I get this to work
     uint32_t timeout = millis() + 5000;
 
-    //Reset focus status
+    // Reset focus status
     _focusStatus = 0x00;
 
     // Focus
     _remoteCommand.write16_resp(PRESS_TO_FOCUS);
 
-    while (_focusStatus != 0x20)
+    if (mode == AUTO_FOCUS)
     {
-        yield();
-
-        if (timeout < millis())
+        while (_focusStatus != 0x20)
         {
-            return false;
+            yield();
+
+            if (timeout < millis())
+            {
+                break;
+            }
         }
     }
-    
+
     // Release back to focus
     _remoteCommand.write16_resp(HOLD_FOCUS);
 
-    //Reset focus status
+    // Reset focus status
     _shutterStatus = 0x00;
 
     // Shutter
     _remoteCommand.write16_resp(TAKE_PICTURE);
 
-       while (_shutterStatus != 0x20)
+    if (mode == AUTO_FOCUS)
     {
-        yield();
-
-        if (timeout < millis())
+        while (_shutterStatus != 0x20)
         {
-            return false;
+            yield();
+
+            if (timeout < millis())
+            {   
+                break;
+            }
         }
     }
 
@@ -144,6 +169,17 @@ bool BLECamera::trigger(void)
     _remoteCommand.write16_resp(SHUTTER_RELEASED);
 
     return true;
+}
+
+void BLECamera::release(void)
+{
+    // Release back to focus
+    _remoteCommand.write16_resp(HOLD_FOCUS);
+
+    delay(10);
+
+    // Let go?
+    _remoteCommand.write16_resp(SHUTTER_RELEASED);
 }
 
 // is_camera returns true if this is a sony cam
@@ -167,7 +203,7 @@ bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
         }
     }
 
-    //camera does not want to pair
+    // camera does not want to pair
     return false;
 }
 
@@ -190,7 +226,7 @@ bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
 //     return true;
 // }
 
-void BLECamera::setMode(Mode m) 
+void BLECamera::setMode(Mode m)
 {
     mode = m;
 }

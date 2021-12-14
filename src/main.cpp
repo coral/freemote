@@ -7,6 +7,11 @@
 BLECamera camera;
 BLEHandler handler;
 
+void resetTest(void) {
+    Serial.println("Clearing bonds");
+    handler.clearBonds();
+}
+
 void setup()
 {
     // Setup the red LED
@@ -18,6 +23,8 @@ void setup()
 
     // Setup button handling
     Input::Init(&camera);
+
+    Input::registerResetCallback(resetTest);
 
 // Debug nation bro
 #if CFG_DEBUG

@@ -21,7 +21,11 @@ bool BLEHandler::InitBLE(BLECamera *newcam)
 
     VERIFY(_camera_ref->begin());
 
-    Bluefruit.setConnLedInterval(250);
+    Bluefruit.autoConnLed(false);
+    #if CFG_DEBUG
+    Bluefruit.autoConnLed(true);
+    //Bluefruit.setConnLedInterval(250);
+    #endif
 
     Bluefruit.Scanner.restartOnDisconnect(true);
     Bluefruit.Scanner.setInterval(160, 80);
@@ -117,6 +121,7 @@ void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
         if (_camera_ref->enableNotify())
         {
             Serial.println("Ready to control camera");
+            rs->set(Status::READY);
             Bluefruit._setConnLed(false);
         }
         else
@@ -124,4 +129,8 @@ void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
             Serial.println("Could not enable notifications");
         }
     }
+}
+
+void BLEHandler::clearBonds(void) {
+    Bluefruit.Central.clearBonds();
 }

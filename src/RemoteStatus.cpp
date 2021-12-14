@@ -54,7 +54,7 @@ void RemoteStatus::resolveColor(Status s)
 
     switch (s)
     {
-    //General
+    // General
     case NONE:
         prim.set(0, 0, 0);
         break;
@@ -67,8 +67,8 @@ void RemoteStatus::resolveColor(Status s)
         alternate = true;
         speed = 100;
         break;
-    
-    //Connection
+
+    // Connection
     case CONNECTING:
         prim.set(0, 0, 255);
         sec.set(0, 0, 2);
@@ -84,8 +84,8 @@ void RemoteStatus::resolveColor(Status s)
         alternate = true;
         speed = 800;
         break;
-    
-    //Usage
+
+    // Usage
     case READY:
         prim.set(0, 128, 0);
         break;
@@ -94,6 +94,9 @@ void RemoteStatus::resolveColor(Status s)
         sec.set(10, 128, 0);
         alternate = true;
         speed = 100;
+        break;
+    case SHUTTER:
+        prim.set(255, 255, 255);
         break;
 
     // Debug

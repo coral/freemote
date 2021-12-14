@@ -11,6 +11,8 @@ static InputDebounce shutterButton;
 static InputDebounce focusButton;
 static InputDebounce selectSwitch;
 
+typedef void (*button_callback)(void);
+
 class Input {
 public:
     static inline BLECamera *_camera_ref = nullptr;
@@ -18,14 +20,23 @@ public:
 
     static void process(unsigned long time);
 
+    static void registerResetCallback(button_callback cb);
+
 private:
 
-    static void pressed(uint8_t pinIn);
-    static void released(uint8_t pinIn);
+    static void pressTrigger(uint8_t pinIn);
+    
+    static void pressFocus(uint8_t pinIn);
+    static void releaseFocus(uint8_t pinIn);
     static void pressedDurationCallback(uint8_t pinIn, unsigned long duration);
-    static void releasedDurationCallback(uint8_t pinIn, unsigned long duration);
 
+    //Reset logic
+    static void resetCheck(uint8_t pinIn, unsigned long duration);
+    static inline bool canReset;
 
     static void switch_on(uint8_t pinIn);
     static void switch_off(uint8_t pinIn);
+
+
+    static inline button_callback _resetCallback = nullptr;
 };

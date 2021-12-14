@@ -46,6 +46,8 @@ public:
     bool disableNotify(void);
 
     bool trigger(void);
+    void focus(bool);
+    void release(void);
 
     //Faciliates extracting information from manufacturer data
     bool isCamera(std::array<uint8_t, 16> data);

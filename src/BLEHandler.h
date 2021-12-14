@@ -12,6 +12,8 @@ public:
     static inline BLECamera *_camera_ref = nullptr;
     static bool InitBLE(BLECamera *newcam);
 
+    static void clearBonds(void);
+
     // Internal stuff
     static void _scan_callback(ble_gap_evt_adv_report_t *report);
     static void _connect_callback(uint16_t conn_handle);
