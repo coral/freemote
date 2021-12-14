@@ -2,48 +2,43 @@
 #include "BLECamera.h"
 #include "BLEHandler.h"
 #include "RemoteStatus.h"
-#include "InputDebounce.h"
-
-#define BUTTON_PIN 7
+#include "InputHandler.h"
 
 BLECamera camera;
 BLEHandler handler;
 
-static InputDebounce triggerButton;
-
-void triggerButton_pressedCallback(uint8_t pinIn) {
-    Serial.println("Camera shutter pressed.");
-    camera.trigger();
-}
-
-
 void setup()
 {
+    // Setup the red LED
+    pinMode(PIN_LED1, OUTPUT);
+
+    // Configure the Neopixel Status LED
     RemoteStatus *rs = rs->access();
     rs->set(Status::BOOT);
 
-    Serial.begin(115200);
-    pinMode(BUTTON_PIN, INPUT);
+    // Setup button handling
+    Input::Init(&camera);
 
-
+// Debug nation bro
 #if CFG_DEBUG
+    Serial.begin(115200);
     rs->set(Status::WAIT_FOR_SERIAL);
     while (!Serial)
         delay(10);
 #endif
 
-
+    // Initialze BLE
     if (!handler.InitBLE(&camera))
     {
         rs->set(Status::ERROR);
     }
-
-    triggerButton.registerCallbacks(triggerButton_pressedCallback, NULL, NULL, NULL);
-	triggerButton.setup(BUTTON_PIN, 20, InputDebounce::PIM_INT_PULL_UP_RES, 0, InputDebounce::ST_NORMALLY_OPEN);
 }
 
 void loop()
 {
+    // Netflix & Chill
     yield();
-    triggerButton.process(millis());
+
+    // Check for button presses
+    Input::process(millis());
 }

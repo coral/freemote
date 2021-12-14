@@ -147,13 +147,13 @@ bool BLECamera::trigger(void)
 }
 
 // is_camera returns true if this is a sony cam
-bool BLECamera::is_camera(std::array<uint8_t, 16> data)
+bool BLECamera::isCamera(std::array<uint8_t, 16> data)
 {
     return std::equal(CAMERA_MANUFACTURER_LOOKUP.begin(), CAMERA_MANUFACTURER_LOOKUP.end(), data.begin());
 }
 
 // pairing_status returns true if camera is open for pairing, false otherwise
-bool BLECamera::pairing_status(std::array<uint8_t, 16> data)
+bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
 {
 
     // We are certain this is a camera, lets check for pairing status
@@ -189,3 +189,8 @@ bool BLECamera::pairing_status(std::array<uint8_t, 16> data)
 
 //     return true;
 // }
+
+void BLECamera::setMode(Mode m) 
+{
+    mode = m;
+}

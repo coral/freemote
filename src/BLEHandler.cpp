@@ -2,7 +2,7 @@
 
 RemoteStatus *rs = rs->access();
 
-bool  BLEHandler::InitBLE(BLECamera *newcam)
+bool BLEHandler::InitBLE(BLECamera *newcam)
 {
 
     _attempt_pairing = false;
@@ -49,10 +49,10 @@ void BLEHandler::_scan_callback(ble_gap_evt_adv_report_t *report)
         {
 
             // Check if this is a Sony camera
-            if (_camera_ref->is_camera(data))
+            if (_camera_ref->isCamera(data))
             {
                 // Check if camera wants to pair
-                if (_camera_ref->pairing_status(data))
+                if (_camera_ref->pairingStatus(data))
                 {
                     Serial.println("Camera wants to pair, lets do it");
                     _attempt_pairing = true;

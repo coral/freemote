@@ -26,6 +26,11 @@ constexpr std::array<uint8_t, 2> CAMERA_MODEL_CODE  = {0x45, 0x31};
 //0x22 indicate tag, 0xEF pairing (with bluetooth remote), 0x00 end
 constexpr std::array<uint8_t, 3> CAMERA_PAIRING_TAG = {0x22, 0xEF, 0x00};
 
+enum Mode
+{
+    MANUAL_FOCUS,
+    AUTO_FOCUS
+};
 
 class BLECamera : public BLEClientService
 {
@@ -43,10 +48,12 @@ public:
     bool trigger(void);
 
     //Faciliates extracting information from manufacturer data
-    bool is_camera(std::array<uint8_t, 16> data);
-    bool pairing_status(std::array<uint8_t, 16> data);
+    bool isCamera(std::array<uint8_t, 16> data);
+    bool pairingStatus(std::array<uint8_t, 16> data);
 
     //bool _ignorantTrigger(void);
+
+    void setMode(Mode m);
 
 
 protected:
@@ -66,4 +73,6 @@ protected:
 
 private:
     RemoteStatus *rs;
+    
+    Mode mode;
 };
