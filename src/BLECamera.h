@@ -46,7 +46,7 @@ public:
     bool disableNotify(void);
 
     bool trigger(void);
-    void focus(bool);
+    void focus(bool f);
     void release(void);
 
     //Faciliates extracting information from manufacturer data
@@ -77,4 +77,5 @@ private:
     RemoteStatus *rs;
     
     Mode mode;
+    bool _focusHeld;
 };

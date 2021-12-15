@@ -119,21 +119,24 @@ bool BLECamera::trigger(void)
     // hack until I get this to work
     uint32_t timeout = millis() + 3000;
 
-    // Reset focus status
-    _focusStatus = 0x00;
-
-    // Focus
-    _remoteCommand.write16_resp(PRESS_TO_FOCUS);
-
-    if (mode == AUTO_FOCUS)
+    if (!_focusHeld)
     {
-        while (_focusStatus != 0x20)
-        {
-            yield();
+        // Reset focus status
+        _focusStatus = 0x00;
 
-            if (timeout < millis())
+        // Focus
+        _remoteCommand.write16_resp(PRESS_TO_FOCUS);
+
+        if (mode == AUTO_FOCUS)
+        {
+            while (_focusStatus != 0x20)
             {
-                break;
+                yield();
+
+                if (timeout < millis())
+                {
+                    break;
+                }
             }
         }
     }
@@ -154,7 +157,7 @@ bool BLECamera::trigger(void)
             yield();
 
             if (timeout < millis())
-            {   
+            {
                 break;
             }
         }
@@ -169,6 +172,28 @@ bool BLECamera::trigger(void)
     _remoteCommand.write16_resp(SHUTTER_RELEASED);
 
     return true;
+}
+
+void BLECamera::focus(bool f)
+{
+    if (mode == AUTO_FOCUS)
+    {
+        _focusHeld = f;
+
+        if (f)
+        {
+            // Focus
+            _remoteCommand.write16_resp(PRESS_TO_FOCUS);
+        }
+        else
+        {
+            _remoteCommand.write16_resp(HOLD_FOCUS);
+            delay(10);
+
+            // Let go?
+            _remoteCommand.write16_resp(SHUTTER_RELEASED);
+        }
+    }
 }
 
 void BLECamera::release(void)
@@ -227,8 +252,7 @@ bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
 // }
 
 void BLECamera::setMode(Mode m)
-{   
-    Serial.println("Set mode to");
-    Serial.println(m);
+{
+    _focusHeld = false;
     mode = m;
 }

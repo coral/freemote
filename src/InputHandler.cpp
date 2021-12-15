@@ -6,7 +6,7 @@ bool Input::Init(BLECamera *newcam)
     canReset = true;
 
     shutterButton.registerCallbacks(pressTrigger, NULL, NULL, resetCheck);
-    focusButton.registerCallbacks(pressFocus, releaseFocus, pressedDurationCallback, NULL);
+    focusButton.registerCallbacks(pressFocus, releaseFocus, NULL, NULL);
     selectSwitch.registerCallbacks(switch_on, switch_off, NULL, NULL);
 
     shutterButton.setup(SHUTTER_BUTTON_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
@@ -18,10 +18,11 @@ bool Input::Init(BLECamera *newcam)
 
 void Input::readStartup(void)
 {
-    if(digitalRead(SELECT_SWITCH_PIN) == HIGH)
+    if (digitalRead(SELECT_SWITCH_PIN) == HIGH)
     {
         Input::switch_on(0);
-    } else
+    }
+    else
     {
         Input::switch_off(0);
     }
@@ -41,16 +42,12 @@ void Input::pressTrigger(uint8_t pinIn)
 
 void Input::pressFocus(uint8_t pinIn)
 {
-    //_camera_ref->focus(true);
+    _camera_ref->focus(true);
 }
 
 void Input::releaseFocus(uint8_t pinIn)
 {
-    //_camera_ref->focus(false);
-}
-
-void Input::pressedDurationCallback(uint8_t pinIn, unsigned long duration)
-{
+    _camera_ref->focus(false);
 }
 
 void Input::resetCheck(uint8_t pinIn, unsigned long duration)
