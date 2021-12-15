@@ -24,6 +24,8 @@ public:
 
 private:
 
+    static void readStartup(void);
+
     static void pressTrigger(uint8_t pinIn);
     
     static void pressFocus(uint8_t pinIn);

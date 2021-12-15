@@ -12,6 +12,19 @@ bool Input::Init(BLECamera *newcam)
     shutterButton.setup(SHUTTER_BUTTON_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
     focusButton.setup(FOCUS_BUTTON_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
     selectSwitch.setup(SELECT_SWITCH_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
+
+    Input::readStartup();
+}
+
+void Input::readStartup(void)
+{
+    if(digitalRead(SELECT_SWITCH_PIN) == HIGH)
+    {
+        Input::switch_on(0);
+    } else
+    {
+        Input::switch_off(0);
+    }
 }
 
 void Input::process(unsigned long time)

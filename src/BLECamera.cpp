@@ -117,7 +117,7 @@ bool BLECamera::disableNotify(void)
 bool BLECamera::trigger(void)
 {
     // hack until I get this to work
-    uint32_t timeout = millis() + 5000;
+    uint32_t timeout = millis() + 3000;
 
     // Reset focus status
     _focusStatus = 0x00;
@@ -227,6 +227,8 @@ bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
 // }
 
 void BLECamera::setMode(Mode m)
-{
+{   
+    Serial.println("Set mode to");
+    Serial.println(m);
     mode = m;
 }
