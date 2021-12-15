@@ -5,7 +5,7 @@ bool Input::Init(BLECamera *newcam)
     _camera_ref = newcam;
     canReset = true;
 
-    shutterButton.registerCallbacks(pressTrigger, NULL, NULL, resetCheck);
+    shutterButton.registerCallbacks(pressTrigger, releaseTrigger, NULL, resetCheck);
     focusButton.registerCallbacks(pressFocus, releaseFocus, NULL, NULL);
     selectSwitch.registerCallbacks(switch_on, switch_off, NULL, NULL);
 
@@ -37,7 +37,12 @@ void Input::process(unsigned long time)
 
 void Input::pressTrigger(uint8_t pinIn)
 {
-    _camera_ref->trigger();
+    _camera_ref->pressTrigger();
+}
+
+void Input::releaseTrigger(uint8_t pinIn)
+{
+    _camera_ref->releaseTrigger();
 }
 
 void Input::pressFocus(uint8_t pinIn)

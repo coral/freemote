@@ -45,7 +45,8 @@ public:
     bool enableNotify(void);
     bool disableNotify(void);
 
-    bool trigger(void);
+    bool pressTrigger(void);
+    bool releaseTrigger(void);
     void focus(bool f);
     void release(void);
 

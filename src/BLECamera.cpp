@@ -114,7 +114,7 @@ bool BLECamera::disableNotify(void)
     return _remoteNotify.disableNotify();
 }
 
-bool BLECamera::trigger(void)
+bool BLECamera::pressTrigger(void)
 {
     // hack until I get this to work
     uint32_t timeout = millis() + 3000;
@@ -163,6 +163,12 @@ bool BLECamera::trigger(void)
         }
     }
 
+    return true;
+}
+
+bool BLECamera::releaseTrigger(void)
+{
+
     // Release back to focus
     _remoteCommand.write16_resp(HOLD_FOCUS);
 
@@ -170,9 +176,8 @@ bool BLECamera::trigger(void)
 
     // Let go?
     _remoteCommand.write16_resp(SHUTTER_RELEASED);
-
-    return true;
 }
+
 
 void BLECamera::focus(bool f)
 {
