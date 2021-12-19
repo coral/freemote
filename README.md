@@ -1,5 +1,9 @@
 # Freemote - Sony Alpha BLE Remote implemented on the NRF52840
 
+### [Watch the build on Youtube](https://www.youtube.com/watch?v=G_nyD2bTs7A)
+
+![image](https://raw.githubusercontent.com/coral/freemote/master/_freemote_photo.jpg)
+
 This is a BLE implementation for the NRF52840 that acts like a BLE (Bluetooth Low Energy) remote for the Sony Alpha series that support the BLE remotes similar to [JJC-RMT-P1BT](https://www.amazon.com/JJC-RMT-P1BT-Bluetooth-Wireless-Commander/dp/B08CR1QPKQ). I've tried this on a Sony A7 III but from my understanding it should work with ZV-1, RX100VII, ZV-E10, A7C, A6100, A6600, A1, A7RIV, A7SIII, A9II, 6400 and A7RIII as well.
 
 Specifically this code runs on the [Adafruit NRF52840 Express](https://www.adafruit.com/product/4062) which costs about $25. The repo is a [PlatformIO](https://platformio.org/) project meaning if you open this it should handle dependencies and the toolchain to program your NRF52840. Currently the code will try to pair with whatever camera is open for pairing (described further down) and save that pairing and then automatically reconnect to that camera when avaliable. There is prob better ways of solving this but yeah, took the easy route here.
@@ -15,7 +19,7 @@ When trying to discover the camera, you have to specifically scan for the "manuf
 | 64       | Protocol Version                             |
 | 00       | ???                                          |
 | 45 31    | Model Code                                   |
-| 22 EF 00 | <Tag> CODE </tag>                            |
+| 22 EF 00 | \<tag> CODE \</tag>                            |
 
 The interesting part here is `0x22 0xEF 0x00` which indicates that the camera is open to pairing. If the camera is not in pairing mode you will get `0x22 0xAF 0x00` instead.
 
