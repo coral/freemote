@@ -51,7 +51,6 @@ void BLEHandler::_scan_callback(ble_gap_evt_adv_report_t *report)
 
         if (bufferSize >= CAMERA_MANUFACTURER_LOOKUP.size())
         {
-
             // Check if this is a Sony camera
             if (_camera_ref->isCamera(data))
             {

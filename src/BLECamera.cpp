@@ -226,12 +226,25 @@ bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
     auto it = std::find(data.begin(), data.end(), 0x22);
     if (it != data.end() && (it + 1) != data.end())
     {
-        if (*(it + 1) == 0xEF)
+        // Bitmasks:
+        //
+        // PairingSupported	0x80
+        // PairingEnabled	0x40
+        // LocationFunctionSupported	0x20
+        // LocationFunctionEnabled	0x10
+        // UnknownFunctionSupported	0x08
+        // UnknownFunctionEnabled	0x04
+        // RemoteFunctionEnabled	0x02
+        // Unknown	0x01
+        
+        if ((*(it + 1) & 0x40) == 0x40 && (*(it + 1) & 0x02) == 0x02)
         {
             // Camera is ready to pair
             return true;
         }
     }
+
+    Serial.println(*(it +1));
 
     // camera does not want to pair
     return false;

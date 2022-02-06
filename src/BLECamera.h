@@ -17,7 +17,7 @@ constexpr uint16_t TAKE_PICTURE = 0x0901;
 //0x3000 = This is a camera
 //0x64 = Protocol version ?
 //0x00 = ??
-constexpr std::array<uint8_t, 6> CAMERA_MANUFACTURER_LOOKUP = {0x2D, 0x01, 0x03, 0x00, 0x64, 0x00};
+constexpr std::array<uint8_t, 4> CAMERA_MANUFACTURER_LOOKUP = {0x2D, 0x01, 0x03, 0x00};
 
 //ASCII Model Code E-mount cameras 'E1', A-mount 'A1'.
 constexpr std::array<uint8_t, 2> CAMERA_MODEL_CODE  = {0x45, 0x31};
