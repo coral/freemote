@@ -29,12 +29,37 @@ We are specifically interested in consuming the `8000FF00-FF00-FFFF-FFFF-FFFFFFF
 
 #### Codes from remote (RemoteCommand 0xFF02)
 
+This is what I initially thought:
+
 | Code   | Description            |
 |--------|------------------------|
 | 0x0106 | Shutter released       |
 | 0x0107 | Transitioning to focus |
 | 0x0108 | Focus held             |
 | 0x0109 | Shutter fully pressed  |
+
+However [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/) reversing this:
+
+| Code     | Description     | 
+| -------- | --------------- | 
+| 0x0107   | Focus Down      | 
+| 0x0106   | Focus Up        | 
+| 0x0109   | Shutter Down    | 
+| 0x0108   | Shutter Up      | 
+| 0x0115   | AutoFocus Down  | 
+| 0x0114   | AutoFocus Up    | 
+| 0x026d20 | Zoom In Down    | 
+| 0x026c00 | Zoom In Up      | 
+| 0x026b20 | Zoom Out Down   | 
+| 0x026a00 | Zoom Out Up     | 
+| 0x0121   | C1 Down         | 
+| 0x0120   | C1 Up           | 
+| 0x010e   | Toggle Record   | 
+| 0x024720 | Focus In? Down  | 
+| 0x024600 | Focus In? Up    | 
+| 0x024520 | Focus Out? Down | 
+| 0x024400 | Focus Out? Up   | 
+
 
 #### Answers from camera (RemoteCommand 0xFF01)
 
