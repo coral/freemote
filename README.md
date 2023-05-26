@@ -42,10 +42,10 @@ However [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-
 
 | Code     | Description     | 
 | -------- | --------------- | 
-| 0x0107   | Focus Down      | 
-| 0x0106   | Focus Up        | 
-| 0x0109   | Shutter Down    | 
-| 0x0108   | Shutter Up      | 
+| 0x0107   | Shutter Half Down | 
+| 0x0106   | Shutter Half Up   | 
+| 0x0109   | Shutter Fully Down| 
+| 0x0108   | Shutter Fully Up  | 
 | 0x0115   | AutoFocus Down  | 
 | 0x0114   | AutoFocus Up    | 
 | 0x026d20 | Zoom In Down    | 
@@ -59,6 +59,8 @@ However [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-
 | 0x024600 | Focus In? Up    | 
 | 0x024520 | Focus Out? Down | 
 | 0x024400 | Focus Out? Up   | 
+
+It must go through the sequence of "Half down -> Fully down -> Half up -> Fully up", otherwise the camera will be stuck in an inoperable state.
 
 
 #### Answers from camera (RemoteCommand 0xFF02)
