@@ -29,7 +29,7 @@ We are specifically interested in consuming the `8000FF00-FF00-FFFF-FFFF-FFFFFFF
 
 #### Codes from remote (RemoteCommand 0xFF01)
 
-This is what I initially thought:
+This is what I initially thought and reflected in the variable names in the code:
 
 | Code   | Description            |
 |--------|------------------------|
@@ -38,29 +38,45 @@ This is what I initially thought:
 | 0x0108 | Focus held             |
 | 0x0109 | Shutter fully pressed  |
 
-However [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/) reversing this:
+However, [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/) reversing this. With [additional testing script done](./ble-test.py), the best guesstimate of the command code is summarized in the following table. 
 
 | Code     | Description     | 
 | -------- | --------------- | 
-| 0x0107   | Shutter Half Down | 
 | 0x0106   | Shutter Half Up   | 
-| 0x0109   | Shutter Fully Down| 
+| 0x0107   | Shutter Half Down | 
 | 0x0108   | Shutter Fully Up  | 
-| 0x0115   | AutoFocus Down  | 
-| 0x0114   | AutoFocus Up    | 
-| 0x026d20 | Zoom In Down    | 
-| 0x026c00 | Zoom In Up      | 
-| 0x026b20 | Zoom Out Down   | 
-| 0x026a00 | Zoom Out Up     | 
-| 0x0121   | C1 Down         | 
+| 0x0109   | Shutter Fully Down| 
+| 0x010e   | Record Up   | 
+| 0x010f   | Record Down  | 
+| 0x0114   | AF-On Up    | 
+| 0x0115   | AF-On Down  | 
 | 0x0120   | C1 Up           | 
-| 0x010e   | Toggle Record   | 
-| 0x024720 | Focus In? Down  | 
-| 0x024600 | Focus In? Up    | 
-| 0x024520 | Focus Out? Down | 
-| 0x024400 | Focus Out? Up   | 
+| 0x0121   | C1 Down         | 
+| 0x0244[00~0f] | Optical Zoom Tele? | 
+| 0x0245[10~8f] | Digital Zoom Tele? | 
+| 0x0246[00~0f] | Optical Zoom Wide? | 
+| 0x0247[10~8f] | Digital Zoom Wide? | 
+| 0x026a[00~0f] | ??  | 
+| 0x026b[00~7f] | Focus In   | 
+| 0x026c[00~0f] | ??  | 
+| 0x026d[00~7f] | Focus Out  | 
 
-It must go through the sequence of "Half down -> Fully down -> Half up -> Fully up", otherwise the camera will be stuck in an inoperable state.
+In summary, those codes discovered so far have a length of either 2 or 3 bytes of the format:
+```
++-----------------+-----------------+----------------------+
+|     Length      |     Command     | Step size (optional) |
++-----------------+-----------------+----------------------+
+
+```
+
+The first byte `Length` is always present, it denotes how many bytes proceeding it: `0x01` for 1 byte, and `0x02` for two bytes. 
+The second byte `Command` is the actual command, it either simulates a button or indicates a property change like zoom or focus.
+The third byte `Step size` is optional, which is usually accompanied by a property change second byte to denote a step size. Known valid step sizes are listed in the bracket for each command, there could be more, only Sony engineering know that so far. 
+
+Sadly, an exhaustive scan for `Command` codes from `0x00` to `0xff` revealed no extra hidden code.
+
+For button codes, it's of best practice to issue them in pairs of `Down` and `Up`.
+The shutter button commands must go through the sequence of "Half down -> Fully down -> Half up -> Fully up", otherwise the camera will be stuck in an inoperable state.
 
 
 #### Answers from camera (RemoteCommand 0xFF02)
