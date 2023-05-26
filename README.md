@@ -27,7 +27,7 @@ The interesting part here is `0x22 0xEF 0x00` which indicates that the camera is
 
 We are specifically interested in consuming the `8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF` service which contains two characteristics. 
 
-#### Codes from remote (RemoteCommand 0xFF02)
+#### Codes from remote (RemoteCommand 0xFF01)
 
 This is what I initially thought:
 
@@ -61,7 +61,7 @@ However [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-
 | 0x024400 | Focus Out? Up   | 
 
 
-#### Answers from camera (RemoteCommand 0xFF01)
+#### Answers from camera (RemoteCommand 0xFF02)
 
 | Code          | Meaning           |
 |---------------|-------------------|
