@@ -38,7 +38,7 @@ This is what I initially thought and reflected in the variable names in the code
 | 0x0108 | Focus held             |
 | 0x0109 | Shutter fully pressed  |
 
-However, [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/) reversing this. With [additional testing script done](./ble-test.py), the best guesstimate of the command code is summarized in the following table. 
+However, [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/) reversing this. With [additional testing script done](./protocol/ble-test.py) by [tao-j](https://github.com/tao-j), the best guesstimate of the command code is summarized in the following table. 
 
 | Code     | Description     | 
 | -------- | --------------- | 
@@ -94,3 +94,9 @@ The shutter button commands must go through the sequence of "Half down -> Fully 
 | **Recording** |                   |
 | 0x02 D5 00    | Recording stopped |
 | 0x02 D5 20    | Recording started |
+
+
+### Acknowledgments & Thanks
+
+- [Greg Leeds](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/)
+- [tao-j](https://github.com/tao-j) for further digging, reproing and discovering
