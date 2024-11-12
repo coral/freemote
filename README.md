@@ -52,14 +52,14 @@ However, [Greg Leeds did a better job](https://gregleeds.com/reverse-engineering
 | 0x0115   | AF-On Down  | 
 | 0x0120   | C1 Up           | 
 | 0x0121   | C1 Down         | 
-| 0x0244[00~0f] | Optical Zoom Tele? | 
-| 0x0245[10~8f] | Digital Zoom Tele? | 
-| 0x0246[00~0f] | Optical Zoom Wide? | 
-| 0x0247[10~8f] | Digital Zoom Wide? | 
-| 0x026a[00~0f] | ??  | 
-| 0x026b[00~7f] | Focus In   | 
-| 0x026c[00~0f] | ??  | 
-| 0x026d[00~7f] | Focus Out  | 
+| 0x0244[00~0f] | Zoom Tele Release | 
+| 0x0245[10~8f] | Zoom Tele Press | 
+| 0x0246[00~0f] | Zoom Wide Release | 
+| 0x0247[10~8f] | Zoom Wide Press | 
+| 0x026a[00~0f] | Focus In Release  | 
+| 0x026b[00~7f] | Focus In Press | 
+| 0x026c[00~0f] | Focus Out Release  | 
+| 0x026d[00~7f] | Focus Out Press | 
 
 In summary, those codes discovered so far have a length of either 2 or 3 bytes of the format:
 ```
