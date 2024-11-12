@@ -100,3 +100,4 @@ The shutter button commands must go through the sequence of "Half down -> Fully 
 
 - [Greg Leeds](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/)
 - [tao-j](https://github.com/tao-j) for further digging, reproing and discovering
+- [Violin9906](https://github.com/Violin9906) for testing the electrical optical zoom codes and clarifying some missing details
