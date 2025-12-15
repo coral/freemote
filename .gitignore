@@ -4,3 +4,6 @@
 .vscode/launch.json
 .vscode/ipch
 .DS_Store
+CLAUDE.md
+claude/
+claude/*

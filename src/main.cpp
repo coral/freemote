@@ -18,7 +18,7 @@ void setup()
     pinMode(PIN_LED1, OUTPUT);
 
     // Configure the Neopixel Status LED
-    RemoteStatus *rs = rs->access();
+    RemoteStatus *rs = RemoteStatus::access();
     rs->set(Status::BOOT);
 
     // Setup button handling

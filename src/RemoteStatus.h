@@ -57,12 +57,12 @@ private:
     CRGB leds[1];
 
 
-    bool updateColor;
+    volatile bool updateColor;
     Color primaryColor;
     Color secondaryColor;
-    bool alternate;
-    bool phase;
-    uint32_t speed;
+    volatile bool alternate;
+    volatile bool phase;
+    volatile uint32_t speed;
 
     TaskHandle_t statusLoopHandle;
 

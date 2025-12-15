@@ -63,9 +63,9 @@ protected:
     BLEClientCharacteristic _remoteCommand;
     BLEClientCharacteristic _remoteNotify;
 
-    uint8_t _shutterStatus; //A0
-    uint8_t _focusStatus; //3F
-    uint8_t _recordingStatus; //D5
+    volatile uint8_t _shutterStatus; //A0
+    volatile uint8_t _focusStatus; //3F
+    volatile uint8_t _recordingStatus; //D5
 
     uint32_t _last_message;
 

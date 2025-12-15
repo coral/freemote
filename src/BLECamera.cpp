@@ -1,9 +1,17 @@
 #include "BLECamera.h"
 #include "bluefruit.h"
 
-BLECamera::BLECamera(void) : BLEClientService("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF"), _remoteCommand(0xFF01), _remoteNotify(0xFF02)
+BLECamera::BLECamera(void)
+    : BLEClientService("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF"),
+      _remoteCommand(0xFF01),
+      _remoteNotify(0xFF02),
+      _shutterStatus(0),
+      _focusStatus(0),
+      _recordingStatus(0),
+      _last_message(0),
+      _focusHeld(false)
 {
-    rs = rs->access();
+    rs = RemoteStatus::access();
 }
 
 void camera_notify_cb(BLEClientCharacteristic *chr, uint8_t *data, uint16_t len)
@@ -116,8 +124,8 @@ bool BLECamera::disableNotify(void)
 
 bool BLECamera::pressTrigger(void)
 {
-    // hack until I get this to work
-    uint32_t timeout = millis() + 3000;
+    // Timeout for focus and shutter operations
+    uint32_t startTime = millis();
 
     if (!_focusHeld)
     {
@@ -129,11 +137,12 @@ bool BLECamera::pressTrigger(void)
 
         if (mode == AUTO_FOCUS)
         {
+            // Wait for focus acquisition (with timeout)
             while (_focusStatus != 0x20)
             {
                 yield();
 
-                if (timeout < millis())
+                if ((millis() - startTime) >= 3000)
                 {
                     break;
                 }
@@ -144,7 +153,7 @@ bool BLECamera::pressTrigger(void)
     // Release back to focus
     _remoteCommand.write16_resp(HOLD_FOCUS);
 
-    // Reset focus status
+    // Reset shutter status
     _shutterStatus = 0x00;
 
     // Shutter
@@ -152,11 +161,12 @@ bool BLECamera::pressTrigger(void)
 
     if (mode == AUTO_FOCUS)
     {
+        // Wait for shutter completion (with timeout)
         while (_shutterStatus != 0x20)
         {
             yield();
 
-            if (timeout < millis())
+            if ((millis() - startTime) >= 3000)
             {
                 break;
             }
@@ -176,6 +186,8 @@ bool BLECamera::releaseTrigger(void)
 
     // Let go?
     _remoteCommand.write16_resp(SHUTTER_RELEASED);
+
+    return true;
 }
 
 

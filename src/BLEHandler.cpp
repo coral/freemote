@@ -1,6 +1,6 @@
 #include "BLEHandler.h"
 
-RemoteStatus *rs = rs->access();
+RemoteStatus *rs = RemoteStatus::access();
 
 bool BLEHandler::InitBLE(BLECamera *newcam)
 {
@@ -113,8 +113,6 @@ void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
             Serial.println("Could not discover remote service");
             return;
         }
-
-        delay(500);
 
         // Connecting camera
         if (_camera_ref->enableNotify())

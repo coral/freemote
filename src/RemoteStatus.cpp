@@ -6,7 +6,7 @@ RemoteStatus::RemoteStatus(void)
     speed = 100;
     set(NONE);
 
-    xTaskCreate(&update_wrapper, "update", 256, NULL, TASK_PRIO_LOW, &statusLoopHandle);
+    xTaskCreate(&update_wrapper, "update", 512, NULL, TASK_PRIO_LOW, &statusLoopHandle);
 }
 
 void RemoteStatus::set(Status s)

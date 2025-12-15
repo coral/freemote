@@ -14,6 +14,8 @@ bool Input::Init(BLECamera *newcam)
     selectSwitch.setup(SELECT_SWITCH_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
 
     Input::readStartup();
+
+    return true;
 }
 
 void Input::readStartup(void)
