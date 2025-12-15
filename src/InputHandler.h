@@ -2,10 +2,11 @@
 #include "InputDebounce.h"
 #include "BLECamera.h"
 
-#define DEBOUNCE_DELAY 20 
+#define DEBOUNCE_DELAY 20
 #define SHUTTER_BUTTON_PIN 11
 #define FOCUS_BUTTON_PIN 12
 #define SELECT_SWITCH_PIN 13
+#define MODE_INDICATOR_LED_PIN 3
 
 static InputDebounce shutterButton;
 static InputDebounce focusButton;

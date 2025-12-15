@@ -8,7 +8,6 @@ BLECamera::BLECamera(void)
       _shutterStatus(0),
       _focusStatus(0),
       _recordingStatus(0),
-      _last_message(0),
       _focusHeld(false)
 {
     rs = RemoteStatus::access();
@@ -106,8 +105,6 @@ void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
                 _recordingStatus = data[2];
                 break;
             }
-
-            _last_message = micros();
         }
     }
 }

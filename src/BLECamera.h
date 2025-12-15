@@ -67,9 +67,6 @@ protected:
     volatile uint8_t _focusStatus; //3F
     volatile uint8_t _recordingStatus; //D5
 
-    uint32_t _last_message;
-
-
     void _handle_camera_notification(uint8_t* data, uint16_t len);
 
     friend void camera_notify_cb(BLEClientCharacteristic* chr, uint8_t* data, uint16_t len);

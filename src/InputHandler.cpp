@@ -79,12 +79,12 @@ void Input::registerResetCallback(button_callback cb)
 
 void Input::switch_on(uint8_t pinIn)
 {
-    digitalWrite(3, HIGH);
+    digitalWrite(MODE_INDICATOR_LED_PIN, HIGH);
     _camera_ref->setMode(MANUAL_FOCUS);
 }
 
 void Input::switch_off(uint8_t pinIn)
 {
-    digitalWrite(3, LOW);
+    digitalWrite(MODE_INDICATOR_LED_PIN, LOW);
     _camera_ref->setMode(AUTO_FOCUS);
 }

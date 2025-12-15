@@ -19,7 +19,7 @@ void RemoteStatus::update()
 {
     while (true)
     {
-        delay(speed);
+        vTaskDelay(pdMS_TO_TICKS(speed));
         if (updateColor)
         {
             leds[0] = CRGB(primaryColor.r, primaryColor.g, primaryColor.b);
