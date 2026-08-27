@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <bluefruit.h>
 #include "BLECamera.h"
 #include "BLEHandler.h"
 #include "RemoteStatus.h"
@@ -12,6 +13,48 @@ void resetTest(void) {
     handler.clearBonds();
 }
 
+void checkForFactoryReset(RemoteStatus *rs) {
+    // Configure button pins for reading
+    pinMode(SHUTTER_BUTTON_PIN, INPUT);
+    pinMode(FOCUS_BUTTON_PIN, INPUT);
+
+    // Check if both buttons are pressed at startup
+    if (digitalRead(SHUTTER_BUTTON_PIN) == HIGH && digitalRead(FOCUS_BUTTON_PIN) == HIGH) {
+        // Wait for 10 seconds while checking buttons are still held
+        uint32_t startTime = millis();
+        bool stillHeld = true;
+
+        while ((millis() - startTime) < 10000) {
+            if (digitalRead(SHUTTER_BUTTON_PIN) == LOW || digitalRead(FOCUS_BUTTON_PIN) == LOW) {
+                stillHeld = false;
+                break;
+            }
+            delay(100);
+        }
+
+        if (stillHeld) {
+            // Both buttons held for 10 seconds - clear bonds
+#if CFG_DEBUG
+            Serial.println("Factory reset: Clearing all bonds");
+#endif
+            rs->set(Status::CLEARING_BONDS);
+
+            // Flash yellow for 5 seconds
+            delay(5000);
+
+            // Clear BLE bonds
+            Bluefruit.Central.clearBonds();
+
+#if CFG_DEBUG
+            Serial.println("Bonds cleared, restarting...");
+#endif
+
+            // Restart the device
+            NVIC_SystemReset();
+        }
+    }
+}
+
 void setup()
 {
     // Setup the red LED
@@ -21,11 +64,6 @@ void setup()
     RemoteStatus *rs = RemoteStatus::access();
     rs->set(Status::BOOT);
 
-    // Setup button handling
-    Input::Init(&camera);
-
-    Input::registerResetCallback(resetTest);
-
 // Debug nation bro
 #if CFG_DEBUG
     Serial.begin(115200);
@@ -33,6 +71,14 @@ void setup()
     while (!Serial)
         delay(10);
 #endif
+
+    // Check for factory reset request (both buttons held)
+    checkForFactoryReset(rs);
+
+    // Setup button handling
+    Input::Init(&camera);
+
+    Input::registerResetCallback(resetTest);
 
     // Initialze BLE
     if (!handler.InitBLE(&camera))

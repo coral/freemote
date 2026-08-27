@@ -16,6 +16,8 @@ enum Status
     FOCUS_ACQUIRED,
     SHUTTER,
 
+    CLEARING_BONDS,
+
     WAIT_FOR_SERIAL,
     DO_NOT_USE,
 };

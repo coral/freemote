@@ -99,6 +99,11 @@ void RemoteStatus::resolveColor(Status s)
         prim.set(255, 255, 255);
         break;
 
+    // Bond management
+    case CLEARING_BONDS:
+        prim.set(255, 255, 0);  // Yellow
+        break;
+
     // Debug
     case WAIT_FOR_SERIAL:
         prim.set(0, 10, 10);
