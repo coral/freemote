@@ -1,283 +1,270 @@
 #include "BLECamera.h"
-#include "bluefruit.h"
 
-BLECamera::BLECamera(void)
+#include "RemoteStatus.h"
+
+#include <Arduino.h>
+#include <algorithm>
+#include <bluefruit.h>
+
+BLECamera::BLECamera()
     : BLEClientService("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF"),
-      _remoteCommand(0xFF01),
-      _remoteNotify(0xFF02),
-      _shutterStatus(0),
-      _focusStatus(0),
-      _recordingStatus(0),
-      _focusHeld(false)
+      remoteCommand_(0xFF01),
+      remoteNotify_(0xFF02),
+      status_(RemoteStatus::access())
 {
-    rs = RemoteStatus::access();
 }
 
-void camera_notify_cb(BLEClientCharacteristic *chr, uint8_t *data, uint16_t len)
+void cameraNotifyCallback(BLEClientCharacteristic *characteristic, uint8_t *data, uint16_t length)
 {
-    BLECamera &svc = (BLECamera &)chr->parentService();
-    svc._handle_camera_notification(data, len);
+    auto &service = static_cast<BLECamera &>(characteristic->parentService());
+    service.handleCameraNotification(data, length);
 }
 
-bool BLECamera::begin(void)
+bool BLECamera::begin()
 {
-    // Invoke base class begin()
-    VERIFY(BLEClientService::begin());
-
-    _remoteCommand.begin(this);
-
-    _remoteNotify.setNotifyCallback(camera_notify_cb);
-    _remoteNotify.begin(this);
-
-    return true;
-}
-
-bool BLECamera::discover(uint16_t conn_handle)
-{
-    // Call Base class discover
-    VERIFY(BLEClientService::discover(conn_handle));
-
-    _conn_hdl = BLE_CONN_HANDLE_INVALID; // make as invalid until we found all chars
-
-    // // Discover all characteristics
-    Bluefruit.Discovery.discoverCharacteristic(conn_handle, _remoteCommand, _remoteNotify);
-
-    VERIFY(_remoteCommand.discovered() && _remoteNotify.discovered());
-
-    _conn_hdl = conn_handle;
-
-    return true;
-}
-
-void BLECamera::_handle_camera_notification(uint8_t *data, uint16_t len)
-{
-
-#if CFG_DEBUG
-    Serial.println("Camera data: ");
-    Serial.print("LEN: ");
-    Serial.print(len);
-    Serial.print(" DATA: ");
-    for (int n = 0; n < len; n++)
+    if (!BLEClientService::begin())
     {
-        Serial.print(" ");
-        Serial.print(data[n], HEX);
-        Serial.print(" ");
+        return false;
     }
-    Serial.write("\0\n");
-    Serial.flush();
+
+    remoteCommand_.begin(this);
+    remoteNotify_.setNotifyCallback(cameraNotifyCallback);
+    remoteNotify_.begin(this);
+    return true;
+}
+
+bool BLECamera::discover(uint16_t connHandle)
+{
+    if (!BLEClientService::discover(connHandle))
+    {
+        return false;
+    }
+
+    _conn_hdl = BLE_CONN_HANDLE_INVALID;
+    const uint8_t discovered = Bluefruit.Discovery.discoverCharacteristic(
+        connHandle, remoteCommand_, remoteNotify_);
+
+    if (discovered != 2 || !remoteCommand_.discovered() || !remoteNotify_.discovered())
+    {
+        return false;
+    }
+
+    _conn_hdl = connHandle;
+    state_.store(CameraState::Discovered);
+    return true;
+}
+
+void BLECamera::handleCameraNotification(uint8_t *data, uint16_t length)
+{
+#if CFG_DEBUG
+    Serial.print("Camera data (len ");
+    Serial.print(length);
+    Serial.print("): ");
+    for (uint16_t index = 0; index < length; ++index)
+    {
+        Serial.print(data[index], HEX);
+        Serial.print(' ');
+    }
+    Serial.println();
 #endif
 
-    if (len == 3)
+    if (data == nullptr || length != 3 || data[0] != 0x02)
     {
-        if (data[0] == 0x02)
-        {
-            switch (data[1])
-            {
-            case 0x3F:
-                _focusStatus = data[2];
+        return;
+    }
 
-                if (_focusStatus == 0x20)
-                {
-                    rs->set(Status::FOCUS_ACQUIRED);
-                }
-                else
-                {
-                    rs->set(Status::READY);
-                }
-
-                break;
-
-            case 0xA0:
-                _shutterStatus = data[2];
-
-                if (_shutterStatus == 0x20)
-                {
-                    rs->set(Status::SHUTTER);
-                }
-                else
-                {
-                    rs->set(Status::READY);
-                }
-
-                break;
-
-            case 0xD5:
-                _recordingStatus = data[2];
-                break;
-            }
-        }
+    switch (data[1])
+    {
+    case 0x3F:
+        focusStatus_.store(data[2]);
+        status_.set(data[2] == 0x20 ? Status::FocusAcquired : Status::Ready);
+        break;
+    case 0xA0:
+        shutterStatus_.store(data[2]);
+        status_.set(data[2] == 0x20 ? Status::Shutter : Status::Ready);
+        break;
+    case 0xD5:
+        recordingStatus_.store(data[2]);
+        break;
+    default:
+        break;
     }
 }
 
-bool BLECamera::enableNotify(void)
+bool BLECamera::enableNotify()
 {
-    return _remoteNotify.enableNotify();
-}
-
-bool BLECamera::disableNotify(void)
-{
-    return _remoteNotify.disableNotify();
-}
-
-bool BLECamera::pressTrigger(void)
-{
-    // Timeout for focus and shutter operations
-    uint32_t startTime = millis();
-
-    if (!_focusHeld)
+    if (state_.load() != CameraState::Discovered || !remoteNotify_.enableNotify())
     {
-        // Reset focus status
-        _focusStatus = 0x00;
+        return false;
+    }
 
-        // Focus
-        _remoteCommand.write16_resp(PRESS_TO_FOCUS);
+    state_.store(CameraState::Ready);
+    return true;
+}
 
-        if (mode == AUTO_FOCUS)
+bool BLECamera::disableNotify()
+{
+    if (!isReady())
+    {
+        return false;
+    }
+
+    const bool disabled = remoteNotify_.disableNotify();
+    if (disabled)
+    {
+        state_.store(CameraState::Discovered);
+    }
+    return disabled;
+}
+
+bool BLECamera::pressTrigger()
+{
+    if (!isReady())
+    {
+        return false;
+    }
+
+    if (!focusHeld_.load())
+    {
+        focusStatus_.store(0);
+        if (!writeCommand(SonyProtocol::PressToFocus))
         {
-            // Wait for focus acquisition (with timeout)
-            while (_focusStatus != 0x20)
-            {
-                yield();
+            return false;
+        }
 
-                if ((millis() - startTime) >= 3000)
-                {
-                    break;
-                }
-            }
+        if (mode_ == Mode::AutoFocus && !waitForStatus(focusStatus_, 0x20))
+        {
+            release();
+            return false;
         }
     }
 
-    // Release back to focus
-    _remoteCommand.write16_resp(HOLD_FOCUS);
-
-    // Reset shutter status
-    _shutterStatus = 0x00;
-
-    // Shutter
-    _remoteCommand.write16_resp(TAKE_PICTURE);
-
-    if (mode == AUTO_FOCUS)
+    shutterStatus_.store(0);
+    if (!writeCommand(SonyProtocol::TakePicture))
     {
-        // Wait for shutter completion (with timeout)
-        while (_shutterStatus != 0x20)
-        {
-            yield();
+        release();
+        return false;
+    }
 
-            if ((millis() - startTime) >= 3000)
-            {
-                break;
-            }
-        }
+    if (mode_ == Mode::AutoFocus && !waitForStatus(shutterStatus_, 0x20))
+    {
+        release();
+        return false;
     }
 
     return true;
 }
 
-bool BLECamera::releaseTrigger(void)
+bool BLECamera::releaseTrigger()
 {
+    return release();
+}
 
-    // Release back to focus
-    _remoteCommand.write16_resp(HOLD_FOCUS);
+bool BLECamera::focus(bool pressed)
+{
+    if (mode_ != Mode::AutoFocus || !isReady())
+    {
+        return false;
+    }
 
+    if (pressed)
+    {
+        const bool focused = writeCommand(SonyProtocol::PressToFocus);
+        focusHeld_.store(focused);
+        return focused;
+    }
+
+    focusHeld_.store(false);
+    return release();
+}
+
+bool BLECamera::release()
+{
+    if (!isReady())
+    {
+        focusHeld_.store(false);
+        return false;
+    }
+
+    const bool held = writeCommand(SonyProtocol::HoldFocus);
     delay(10);
+    const bool released = writeCommand(SonyProtocol::ShutterReleased);
+    focusHeld_.store(false);
+    return held && released;
+}
 
-    // Let go?
-    _remoteCommand.write16_resp(SHUTTER_RELEASED);
+bool BLECamera::writeCommand(uint16_t command)
+{
+    return isReady() && remoteCommand_.write16_resp(command) == sizeof(command);
+}
 
+bool BLECamera::waitForStatus(const std::atomic<uint8_t> &status, uint8_t expected) const
+{
+    const uint32_t startedAt = millis();
+    while (status.load() != expected)
+    {
+        if (millis() - startedAt >= CommandTimeoutMs || !isReady())
+        {
+            return false;
+        }
+        yield();
+    }
     return true;
 }
 
-
-void BLECamera::focus(bool f)
+bool BLECamera::isCamera(const uint8_t *data, size_t length) const
 {
-    if (mode == AUTO_FOCUS)
+    return data != nullptr && length >= SonyProtocol::CameraManufacturer.size() &&
+           std::equal(SonyProtocol::CameraManufacturer.begin(),
+                      SonyProtocol::CameraManufacturer.end(), data);
+}
+
+bool BLECamera::pairingStatus(const uint8_t *data, size_t length) const
+{
+    if (data == nullptr || length < 2)
     {
-        _focusHeld = f;
-
-        if (f)
-        {
-            // Focus
-            _remoteCommand.write16_resp(PRESS_TO_FOCUS);
-        }
-        else
-        {
-            _remoteCommand.write16_resp(HOLD_FOCUS);
-            delay(10);
-
-            // Let go?
-            _remoteCommand.write16_resp(SHUTTER_RELEASED);
-        }
-    }
-}
-
-void BLECamera::release(void)
-{
-    // Release back to focus
-    _remoteCommand.write16_resp(HOLD_FOCUS);
-
-    delay(10);
-
-    // Let go?
-    _remoteCommand.write16_resp(SHUTTER_RELEASED);
-}
-
-// is_camera returns true if this is a sony cam
-bool BLECamera::isCamera(std::array<uint8_t, 16> data)
-{
-    return std::equal(CAMERA_MANUFACTURER_LOOKUP.begin(), CAMERA_MANUFACTURER_LOOKUP.end(), data.begin());
-}
-
-// pairing_status returns true if camera is open for pairing, false otherwise
-bool BLECamera::pairingStatus(std::array<uint8_t, 16> data)
-{
-
-    // We are certain this is a camera, lets check for pairing status
-    auto it = std::find(data.begin(), data.end(), 0x22);
-    if (it != data.end() && (it + 1) != data.end())
-    {
-        // Bitmasks:
-        //
-        // PairingSupported	0x80
-        // PairingEnabled	0x40
-        // LocationFunctionSupported	0x20
-        // LocationFunctionEnabled	0x10
-        // UnknownFunctionSupported	0x08
-        // UnknownFunctionEnabled	0x04
-        // RemoteFunctionEnabled	0x02
-        // Unknown	0x01
-
-        if ((*(it + 1) & 0x40) == 0x40 && (*(it + 1) & 0x02) == 0x02)
-        {
-            // Camera is ready to pair
-            return true;
-        }
+        return false;
     }
 
-    // camera does not want to pair
-    return false;
+    const uint8_t *tag = std::find(data, data + length, 0x22);
+    if (tag == data + length || tag + 1 == data + length)
+    {
+        return false;
+    }
+
+    constexpr uint8_t PairingEnabled = 0x40;
+    constexpr uint8_t RemoteEnabled = 0x02;
+    return (tag[1] & (PairingEnabled | RemoteEnabled)) == (PairingEnabled | RemoteEnabled);
 }
 
-// This just sends the commands in order to test, doesn't work if the camera struggles to focus.
-// bool BLECamera::_ignorantTrigger(void)
-// {
-
-//     // Focus
-//     _remoteCommand.write16_resp(0x0701);
-
-//     // Shutter
-//     _remoteCommand.write16_resp(0x0901);
-
-//     // Release back to focus
-//     _remoteCommand.write16_resp(0x0801);
-
-//     // Let go?
-//     _remoteCommand.write16_resp(0x0601);
-
-//     return true;
-// }
-
-void BLECamera::setMode(Mode m)
+void BLECamera::setMode(Mode mode)
 {
-    _focusHeld = false;
-    mode = m;
+    if (focusHeld_.load() && mode != mode_)
+    {
+        release();
+    }
+    mode_ = mode;
+}
+
+void BLECamera::onConnected()
+{
+    focusStatus_.store(0);
+    shutterStatus_.store(0);
+    recordingStatus_.store(0);
+    focusHeld_.store(false);
+    state_.store(CameraState::Connected);
+}
+
+void BLECamera::onDisconnected()
+{
+    focusStatus_.store(0);
+    shutterStatus_.store(0);
+    recordingStatus_.store(0);
+    focusHeld_.store(false);
+    state_.store(CameraState::Disconnected);
+}
+
+bool BLECamera::isReady() const
+{
+    return state_.load() == CameraState::Ready;
 }

@@ -1,133 +1,202 @@
 #include "BLEHandler.h"
 
-RemoteStatus *rs = RemoteStatus::access();
+#include "RemoteStatus.h"
+#include <array>
 
-bool BLEHandler::InitBLE(BLECamera *newcam)
+bool BLEHandler::initializeBluefruit()
 {
+    if (initialized_)
+    {
+        return true;
+    }
 
-    _attempt_pairing = false;
-    _camera_ref = newcam;
+    initialized_ = Bluefruit.begin(0, 1);
+    return initialized_;
+}
 
-    Bluefruit.begin(0, 1);
+bool BLEHandler::begin(BLECamera &camera)
+{
+    camera_ = &camera;
+    attemptPairing_ = false;
+
+    if (!initializeBluefruit())
+    {
+        return false;
+    }
 
     Bluefruit.setName("FREEMOTE");
+    Bluefruit.Scanner.setRxCallback(scanCallback);
+    Bluefruit.Central.setConnectCallback(connectCallback);
+    Bluefruit.Central.setDisconnectCallback(disconnectCallback);
+    Bluefruit.Security.setSecuredCallback(connectionSecuredCallback);
 
+    if (!camera_->begin())
+    {
+        return false;
+    }
 
-    // Callbacks
-    Bluefruit.Scanner.setRxCallback(_scan_callback);
-    Bluefruit.Central.setConnectCallback(_connect_callback);
-    Bluefruit.Central.setDisconnectCallback(_disconnect_callback);
-    Bluefruit.Security.setSecuredCallback(_connection_secured_callback);
-
-    VERIFY(_camera_ref->begin());
-
-    Bluefruit.autoConnLed(false);
-    #if CFG_DEBUG
+#if CFG_DEBUG
     Bluefruit.autoConnLed(true);
-    //Bluefruit.setConnLedInterval(250);
-    #endif
+#else
+    Bluefruit.autoConnLed(false);
+#endif
 
     Bluefruit.Scanner.restartOnDisconnect(true);
     Bluefruit.Scanner.setInterval(160, 80);
     Bluefruit.Scanner.useActiveScan(false);
-    Bluefruit.Scanner.start(0);
 
+    if (!Bluefruit.Scanner.start(0))
+    {
+        return false;
+    }
+
+#if CFG_DEBUG
     Serial.println("Started scanning");
-
-    rs->set(Status::CONNECTING);
-
+#endif
+    RemoteStatus::access().set(Status::Connecting);
     return true;
 }
 
-void BLEHandler::_scan_callback(ble_gap_evt_adv_report_t *report)
+void BLEHandler::scanCallback(ble_gap_evt_adv_report_t *report)
 {
-    std::array<uint8_t, 16> data;
-    uint8_t bufferSize;
-
-    if (report->data.len >= CAMERA_MANUFACTURER_LOOKUP.size())
+    if (camera_ == nullptr || report == nullptr)
     {
-
-        bufferSize = Bluefruit.Scanner.parseReportByType(report, 0xff, data.data(), data.size());
-
-        if (bufferSize >= CAMERA_MANUFACTURER_LOOKUP.size())
-        {
-            // Check if this is a Sony camera
-            if (_camera_ref->isCamera(data))
-            {
-                // Check if camera wants to pair
-                if (_camera_ref->pairingStatus(data))
-                {
-                    Serial.println("Camera wants to pair, lets do it");
-                    _attempt_pairing = true;
-                }
-
-                Bluefruit.Central.connect(report);
-            }
-        }
+        Bluefruit.Scanner.resume();
+        return;
     }
-    Bluefruit.Scanner.resume();
-}
 
-void BLEHandler::_connect_callback(uint16_t conn_handle)
-{
-    BLEConnection *conn = Bluefruit.Connection(conn_handle);
+    std::array<uint8_t, 16> manufacturerData{};
+    const uint8_t length = Bluefruit.Scanner.parseReportByType(
+        report, BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA,
+        manufacturerData.data(), manufacturerData.size());
 
-    Serial.println("Connected to device.");
-    if (_attempt_pairing == true)
+    if (!camera_->isCamera(manufacturerData.data(), length))
     {
-        conn->requestPairing();
+        Bluefruit.Scanner.resume();
+        return;
+    }
+
+    attemptPairing_ = camera_->pairingStatus(manufacturerData.data(), length);
+#if CFG_DEBUG
+    if (attemptPairing_)
+    {
+        Serial.println("Camera is accepting a new remote");
+    }
+#endif
+
+    if (!Bluefruit.Central.connect(report))
+    {
+        attemptPairing_ = false;
+        Bluefruit.Scanner.resume();
     }
 }
 
-void BLEHandler::_disconnect_callback(uint16_t conn_handle, uint8_t reason)
+void BLEHandler::connectCallback(uint16_t connHandle)
 {
-    (void)conn_handle;
-    (void)reason;
+    if (camera_ == nullptr)
+    {
+        return;
+    }
 
+    camera_->onConnected();
+    BLEConnection *connection = Bluefruit.Connection(connHandle);
+
+#if CFG_DEBUG
+    Serial.println("Connected to camera");
+#endif
+
+    const bool shouldPair = attemptPairing_;
+    attemptPairing_ = false;
+    if (shouldPair && connection != nullptr)
+    {
+        connection->requestPairing();
+    }
+}
+
+void BLEHandler::disconnectCallback(uint16_t connHandle, uint8_t reason)
+{
+    (void)connHandle;
+    attemptPairing_ = false;
+    if (camera_ != nullptr)
+    {
+        camera_->onDisconnected();
+    }
+
+#if CFG_DEBUG
     Serial.print("Disconnected, reason = 0x");
     Serial.println(reason, HEX);
-    Bluefruit._setConnLed(true);
-    rs->set(Status::CONNECTION_LOST);
+#else
+    (void)reason;
+#endif
+    RemoteStatus::access().set(Status::ConnectionLost);
 }
 
-void BLEHandler::_connection_secured_callback(uint16_t conn_handle)
+void BLEHandler::connectionSecuredCallback(uint16_t connHandle)
 {
-    BLEConnection *conn = Bluefruit.Connection(conn_handle);
-
-    if (!conn->secured())
+    if (camera_ == nullptr)
     {
-        Serial.println("Not secure");
-        conn->requestPairing();
+        return;
     }
-    else
+
+    BLEConnection *connection = Bluefruit.Connection(connHandle);
+    if (connection == nullptr)
     {
-        Serial.println("Secured");
-        rs->set(Status::CONNECTED);
-
-        if (_camera_ref->discover(conn_handle))
-        {
-            Serial.println("Found service");
-        }
-        else
-        {
-            Serial.println("Could not discover remote service");
-            return;
-        }
-
-        // Connecting camera
-        if (_camera_ref->enableNotify())
-        {
-            Serial.println("Ready to control camera");
-            rs->set(Status::READY);
-            Bluefruit._setConnLed(false);
-        }
-        else
-        {
-            Serial.println("Could not enable notifications");
-        }
+        RemoteStatus::access().set(Status::Error);
+        return;
     }
+
+    if (!connection->secured())
+    {
+#if CFG_DEBUG
+        Serial.println("Connection is not secure; requesting pairing");
+#endif
+        if (!connection->requestPairing())
+        {
+            RemoteStatus::access().set(Status::Error);
+        }
+        return;
+    }
+
+    RemoteStatus::access().set(Status::Connected);
+    if (!camera_->discover(connHandle))
+    {
+#if CFG_DEBUG
+        Serial.println("Could not discover the camera remote service");
+#endif
+        RemoteStatus::access().set(Status::Error);
+        return;
+    }
+
+    if (!camera_->enableNotify())
+    {
+#if CFG_DEBUG
+        Serial.println("Could not enable camera notifications");
+#endif
+        RemoteStatus::access().set(Status::Error);
+        return;
+    }
+
+#if CFG_DEBUG
+    Serial.println("Camera is ready");
+#endif
+    RemoteStatus::access().set(Status::Ready);
 }
 
-void BLEHandler::clearBonds(void) {
+bool BLEHandler::clearBondsAndRestart()
+{
+    RemoteStatus::access().set(Status::ClearingBonds);
+    delay(5000);
+
+    // Bluefruit.begin() mounts and initializes the LittleFS-backed bond store.
+    // This path also runs before normal BLE setup on a factory-fresh board.
+    if (!initializeBluefruit())
+    {
+        RemoteStatus::access().set(Status::Error);
+        return false;
+    }
+
     Bluefruit.Central.clearBonds();
+    delay(100);
+    NVIC_SystemReset();
+    return true;
 }

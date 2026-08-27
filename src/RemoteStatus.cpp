@@ -1,118 +1,128 @@
 #include "RemoteStatus.h"
 
-RemoteStatus::RemoteStatus(void)
+RemoteStatus &RemoteStatus::access()
 {
-    FastLED.addLeds<NEOPIXEL, PIN_NEOPIXEL>(leds, 1);
-    speed = 100;
-    set(NONE);
-
-    xTaskCreate(&update_wrapper, "update", 512, NULL, TASK_PRIO_LOW, &statusLoopHandle);
+    static RemoteStatus instance;
+    return instance;
 }
 
-void RemoteStatus::set(Status s)
+bool RemoteStatus::begin()
 {
-    resolveColor(s);
-    updateColor = true;
+    if (statusTask_ != nullptr)
+    {
+        return true;
+    }
+
+    FastLED.addLeds<NEOPIXEL, PIN_NEOPIXEL>(leds_, 1);
+
+    statusQueue_ = xQueueCreate(1, sizeof(Status));
+    if (statusQueue_ == nullptr)
+    {
+        return false;
+    }
+
+    if (xTaskCreate(updateWrapper, "status", 512, this, TASK_PRIO_LOW, &statusTask_) != pdPASS)
+    {
+        vQueueDelete(statusQueue_);
+        statusQueue_ = nullptr;
+        return false;
+    }
+
+    set(Status::None);
+    return true;
+}
+
+void RemoteStatus::set(Status status)
+{
+    if (statusQueue_ != nullptr)
+    {
+        xQueueOverwrite(statusQueue_, &status);
+    }
+}
+
+void RemoteStatus::updateWrapper(void *arg)
+{
+    static_cast<RemoteStatus *>(arg)->update();
 }
 
 void RemoteStatus::update()
 {
+    Animation animation = resolve(Status::None);
+    bool showPrimary = true;
+
+    leds_[0] = animation.primary;
+    FastLED.show();
+
     while (true)
     {
-        vTaskDelay(pdMS_TO_TICKS(speed));
-        if (updateColor)
+        Status nextStatus;
+        if (xQueueReceive(statusQueue_, &nextStatus, animation.interval) == pdTRUE)
         {
-            leds[0] = CRGB(primaryColor.r, primaryColor.g, primaryColor.b);
+            animation = resolve(nextStatus);
+            showPrimary = true;
+            leds_[0] = animation.primary;
             FastLED.show();
-            updateColor = false;
         }
-
-        if (alternate)
+        else if (animation.alternate)
         {
-            if (!phase)
-            {
-                leds[0] = CRGB(primaryColor.r, primaryColor.g, primaryColor.b);
-                phase = true;
-            }
-            else
-            {
-                leds[0] = CRGB(secondaryColor.r, secondaryColor.g, secondaryColor.b);
-                phase = false;
-            }
+            showPrimary = !showPrimary;
+            leds_[0] = showPrimary ? animation.primary : animation.secondary;
             FastLED.show();
         }
     }
 }
 
-void RemoteStatus::resolveColor(Status s)
+RemoteStatus::Animation RemoteStatus::resolve(Status status)
 {
-    Color prim;
-    Color sec;
-    alternate = false;
-    phase = false;
-    speed = 50;
+    Animation animation;
 
-    switch (s)
+    switch (status)
     {
-    // General
-    case NONE:
-        prim.set(0, 0, 0);
+    case Status::None:
         break;
-    case BOOT:
-        prim.set(10, 10, 10);
+    case Status::Boot:
+        animation.primary = CRGB(10, 10, 10);
         break;
-    case ERROR:
-        prim.set(255, 0, 0);
-        sec.set(5, 0, 0);
-        alternate = true;
-        speed = 100;
+    case Status::Error:
+        animation.primary = CRGB(255, 0, 0);
+        animation.secondary = CRGB(5, 0, 0);
+        animation.interval = pdMS_TO_TICKS(100);
+        animation.alternate = true;
         break;
+    case Status::Connecting:
+        animation.primary = CRGB(0, 0, 255);
+        animation.secondary = CRGB(0, 0, 2);
+        animation.interval = pdMS_TO_TICKS(1000);
+        animation.alternate = true;
+        break;
+    case Status::Connected:
+        animation.primary = CRGB(0, 0, 255);
+        break;
+    case Status::ConnectionLost:
+        animation.primary = CRGB(0, 0, 255);
+        animation.secondary = CRGB(128, 0, 0);
+        animation.interval = pdMS_TO_TICKS(800);
+        animation.alternate = true;
+        break;
+    case Status::Ready:
+        animation.primary = CRGB(0, 128, 0);
+        break;
+    case Status::FocusAcquired:
+        animation.primary = CRGB(128, 128, 0);
+        animation.secondary = CRGB(10, 128, 0);
+        animation.interval = pdMS_TO_TICKS(100);
+        animation.alternate = true;
+        break;
+    case Status::Shutter:
+        animation.primary = CRGB(255, 255, 255);
+        break;
+    case Status::ClearingBonds:
+        animation.primary = CRGB(255, 255, 0);
+        break;
+    case Status::WaitForSerial:
+        animation.primary = CRGB(0, 10, 10);
+        break;
+    }
 
-    // Connection
-    case CONNECTING:
-        prim.set(0, 0, 255);
-        sec.set(0, 0, 2);
-        alternate = true;
-        speed = 1000;
-        break;
-    case CONNECTED:
-        prim.set(0, 0, 255);
-        break;
-    case CONNECTION_LOST:
-        prim.set(0, 0, 255);
-        sec.set(128, 0, 0);
-        alternate = true;
-        speed = 800;
-        break;
-
-    // Usage
-    case READY:
-        prim.set(0, 128, 0);
-        break;
-    case FOCUS_ACQUIRED:
-        prim.set(128, 128, 0);
-        sec.set(10, 128, 0);
-        alternate = true;
-        speed = 100;
-        break;
-    case SHUTTER:
-        prim.set(255, 255, 255);
-        break;
-
-    // Bond management
-    case CLEARING_BONDS:
-        prim.set(255, 255, 0);  // Yellow
-        break;
-
-    // Debug
-    case WAIT_FOR_SERIAL:
-        prim.set(0, 10, 10);
-        break;
-    case DO_NOT_USE:
-        prim.set(0, 0, 0);
-        break;
-    };
-
-    primaryColor = prim;
-    secondaryColor = sec;
+    return animation;
 }

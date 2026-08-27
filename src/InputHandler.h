@@ -1,46 +1,36 @@
 #pragma once
-#include "InputDebounce.h"
+
 #include "BLECamera.h"
+#include <Arduino.h>
 
-#define DEBOUNCE_DELAY 20
-#define SHUTTER_BUTTON_PIN 11
-#define FOCUS_BUTTON_PIN 12
-#define SELECT_SWITCH_PIN 13
-#define MODE_INDICATOR_LED_PIN 3
+namespace InputPins
+{
+inline constexpr uint8_t ShutterButton = 11;
+inline constexpr uint8_t FocusButton = 12;
+inline constexpr uint8_t SelectSwitch = 13;
+inline constexpr uint8_t ModeIndicator = 3;
+} // namespace InputPins
 
-static InputDebounce shutterButton;
-static InputDebounce focusButton;
-static InputDebounce selectSwitch;
+using ButtonCallback = void (*)();
 
-typedef void (*button_callback)(void);
-
-class Input {
+class Input
+{
 public:
-    static inline BLECamera *_camera_ref = nullptr;
-    static bool Init(BLECamera *newcam);
-
-    static void process(unsigned long time);
-
-    static void registerResetCallback(button_callback cb);
+    static bool begin(BLECamera &camera);
+    static void process(uint32_t time);
+    static void registerResetCallback(ButtonCallback callback);
 
 private:
+    static void readStartup();
+    static void pressTrigger(uint8_t pin);
+    static void releaseTrigger(uint8_t pin);
+    static void pressFocus(uint8_t pin);
+    static void releaseFocus(uint8_t pin);
+    static void resetCheck(uint8_t pin, unsigned long duration);
+    static void switchOn(uint8_t pin);
+    static void switchOff(uint8_t pin);
 
-    static void readStartup(void);
-
-    static void pressTrigger(uint8_t pinIn);
-    static void releaseTrigger(uint8_t pinIn);
-    
-    static void pressFocus(uint8_t pinIn);
-    static void releaseFocus(uint8_t pinIn);
-    static void pressedDurationCallback(uint8_t pinIn, unsigned long duration);
-
-    //Reset logic
-    static void resetCheck(uint8_t pinIn, unsigned long duration);
-    static inline bool canReset;
-
-    static void switch_on(uint8_t pinIn);
-    static void switch_off(uint8_t pinIn);
-
-
-    static inline button_callback _resetCallback = nullptr;
+    static inline BLECamera *camera_ = nullptr;
+    static inline ButtonCallback resetCallback_ = nullptr;
+    static inline bool canReset_ = true;
 };

@@ -1,90 +1,119 @@
 #include "InputHandler.h"
 
-bool Input::Init(BLECamera *newcam)
+#include "InputDebounce.h"
+
+namespace
 {
-    _camera_ref = newcam;
-    canReset = true;
+constexpr uint16_t DebounceDelayMs = 20;
+InputDebounce shutterButton;
+InputDebounce focusButton;
+InputDebounce selectSwitch;
+} // namespace
 
-    shutterButton.registerCallbacks(pressTrigger, releaseTrigger, NULL, resetCheck);
-    focusButton.registerCallbacks(pressFocus, releaseFocus, NULL, NULL);
-    selectSwitch.registerCallbacks(switch_on, switch_off, NULL, NULL);
+bool Input::begin(BLECamera &camera)
+{
+    camera_ = &camera;
+    canReset_ = true;
 
-    shutterButton.setup(SHUTTER_BUTTON_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
-    focusButton.setup(FOCUS_BUTTON_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
-    selectSwitch.setup(SELECT_SWITCH_PIN, DEBOUNCE_DELAY, InputDebounce::PIM_EXT_PULL_DOWN_RES);
+    shutterButton.registerCallbacks(pressTrigger, releaseTrigger, nullptr, resetCheck);
+    focusButton.registerCallbacks(pressFocus, releaseFocus, nullptr, nullptr);
+    selectSwitch.registerCallbacks(switchOn, switchOff, nullptr, nullptr);
 
-    Input::readStartup();
+    shutterButton.setup(InputPins::ShutterButton, DebounceDelayMs, InputDebounce::PIM_EXT_PULL_DOWN_RES);
+    focusButton.setup(InputPins::FocusButton, DebounceDelayMs, InputDebounce::PIM_EXT_PULL_DOWN_RES);
+    selectSwitch.setup(InputPins::SelectSwitch, DebounceDelayMs, InputDebounce::PIM_EXT_PULL_DOWN_RES);
+    pinMode(InputPins::ModeIndicator, OUTPUT);
 
+    readStartup();
     return true;
 }
 
-void Input::readStartup(void)
+void Input::readStartup()
 {
-    if (digitalRead(SELECT_SWITCH_PIN) == HIGH)
+    if (digitalRead(InputPins::SelectSwitch) == HIGH)
     {
-        Input::switch_on(0);
+        switchOn(InputPins::SelectSwitch);
     }
     else
     {
-        Input::switch_off(0);
+        switchOff(InputPins::SelectSwitch);
     }
 }
 
-void Input::process(unsigned long time)
+void Input::process(uint32_t time)
 {
     shutterButton.process(time);
     focusButton.process(time);
     selectSwitch.process(time);
 }
 
-void Input::pressTrigger(uint8_t pinIn)
+void Input::pressTrigger(uint8_t pin)
 {
-    _camera_ref->pressTrigger();
-}
-
-void Input::releaseTrigger(uint8_t pinIn)
-{
-    _camera_ref->releaseTrigger();
-}
-
-void Input::pressFocus(uint8_t pinIn)
-{
-    _camera_ref->focus(true);
-}
-
-void Input::releaseFocus(uint8_t pinIn)
-{
-    _camera_ref->focus(false);
-}
-
-void Input::resetCheck(uint8_t pinIn, unsigned long duration)
-{
-    if (duration > 10000 && millis() < 25000 && canReset)
+    (void)pin;
+    if (camera_ != nullptr)
     {
-        // Clear bonds
-        if (_resetCallback)
-        {
-            _resetCallback();
-        }
+        camera_->pressTrigger();
     }
-    canReset = false;
 }
 
-void Input::registerResetCallback(button_callback cb)
+void Input::releaseTrigger(uint8_t pin)
 {
-    _resetCallback = cb;
+    (void)pin;
+    if (camera_ != nullptr)
+    {
+        camera_->releaseTrigger();
+    }
 }
 
-// Switch specific
-
-void Input::switch_on(uint8_t pinIn)
+void Input::pressFocus(uint8_t pin)
 {
-    digitalWrite(MODE_INDICATOR_LED_PIN, HIGH);
-    _camera_ref->setMode(MANUAL_FOCUS);
+    (void)pin;
+    if (camera_ != nullptr)
+    {
+        camera_->focus(true);
+    }
 }
 
-void Input::switch_off(uint8_t pinIn)
+void Input::releaseFocus(uint8_t pin)
 {
-    digitalWrite(MODE_INDICATOR_LED_PIN, LOW);
-    _camera_ref->setMode(AUTO_FOCUS);
+    (void)pin;
+    if (camera_ != nullptr)
+    {
+        camera_->focus(false);
+    }
+}
+
+void Input::resetCheck(uint8_t pin, unsigned long duration)
+{
+    (void)pin;
+    if (duration > 10000 && millis() < 25000 && canReset_ && resetCallback_ != nullptr)
+    {
+        resetCallback_();
+    }
+    canReset_ = false;
+}
+
+void Input::registerResetCallback(ButtonCallback callback)
+{
+    resetCallback_ = callback;
+}
+
+void Input::switchOn(uint8_t pin)
+{
+    (void)pin;
+    digitalWrite(InputPins::ModeIndicator, HIGH);
+    if (camera_ != nullptr)
+    {
+        camera_->setMode(Mode::ManualFocus);
+    }
+}
+
+void Input::switchOff(uint8_t pin)
+{
+    (void)pin;
+    digitalWrite(InputPins::ModeIndicator, LOW);
+    if (camera_ != nullptr)
+    {
+        camera_->setMode(Mode::AutoFocus);
+    }
 }

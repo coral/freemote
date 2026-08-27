@@ -1,103 +1,88 @@
 #include <Arduino.h>
-#include <bluefruit.h>
+
 #include "BLECamera.h"
 #include "BLEHandler.h"
-#include "RemoteStatus.h"
 #include "InputHandler.h"
+#include "RemoteStatus.h"
 
+namespace
+{
 BLECamera camera;
-BLEHandler handler;
 
-void resetTest(void) {
+void resetBonds()
+{
+#if CFG_DEBUG
     Serial.println("Clearing bonds");
-    handler.clearBonds();
+#endif
+    BLEHandler::clearBondsAndRestart();
 }
 
-void checkForFactoryReset(RemoteStatus *rs) {
-    // Configure button pins for reading
-    pinMode(SHUTTER_BUTTON_PIN, INPUT);
-    pinMode(FOCUS_BUTTON_PIN, INPUT);
+void checkForFactoryReset()
+{
+    pinMode(InputPins::ShutterButton, INPUT);
+    pinMode(InputPins::FocusButton, INPUT);
 
-    // Check if both buttons are pressed at startup
-    if (digitalRead(SHUTTER_BUTTON_PIN) == HIGH && digitalRead(FOCUS_BUTTON_PIN) == HIGH) {
-        // Wait for 10 seconds while checking buttons are still held
-        uint32_t startTime = millis();
-        bool stillHeld = true;
-
-        while ((millis() - startTime) < 10000) {
-            if (digitalRead(SHUTTER_BUTTON_PIN) == LOW || digitalRead(FOCUS_BUTTON_PIN) == LOW) {
-                stillHeld = false;
-                break;
-            }
-            delay(100);
-        }
-
-        if (stillHeld) {
-            // Both buttons held for 10 seconds - clear bonds
-#if CFG_DEBUG
-            Serial.println("Factory reset: Clearing all bonds");
-#endif
-            rs->set(Status::CLEARING_BONDS);
-
-            // Flash yellow for 5 seconds
-            delay(5000);
-
-            // Bond storage lives on LittleFS, which is mounted by
-            // Bluefruit.begin(). The normal BLE initialization happens later
-            // in setup(), so initialize Bluefruit explicitly on this early
-            // factory-reset path before touching the bond store.
-            Bluefruit.begin(0, 1);
-
-            // Clear BLE bonds
-            Bluefruit.Central.clearBonds();
-
-#if CFG_DEBUG
-            Serial.println("Bonds cleared, restarting...");
-#endif
-
-            // Restart the device
-            NVIC_SystemReset();
-        }
+    if (digitalRead(InputPins::ShutterButton) != HIGH ||
+        digitalRead(InputPins::FocusButton) != HIGH)
+    {
+        return;
     }
+
+    const uint32_t startedAt = millis();
+    while (millis() - startedAt < 10000)
+    {
+        if (digitalRead(InputPins::ShutterButton) == LOW ||
+            digitalRead(InputPins::FocusButton) == LOW)
+        {
+            return;
+        }
+        delay(100);
+    }
+
+#if CFG_DEBUG
+    Serial.println("Factory reset requested");
+#endif
+    BLEHandler::clearBondsAndRestart();
 }
+} // namespace
 
 void setup()
 {
-    // Setup the red LED
     pinMode(PIN_LED1, OUTPUT);
 
-    // Configure the Neopixel Status LED
-    RemoteStatus *rs = RemoteStatus::access();
-    rs->set(Status::BOOT);
+    RemoteStatus &status = RemoteStatus::access();
+    if (!status.begin())
+    {
+        return;
+    }
+    status.set(Status::Boot);
 
-// Debug nation bro
 #if CFG_DEBUG
     Serial.begin(115200);
-    rs->set(Status::WAIT_FOR_SERIAL);
+    status.set(Status::WaitForSerial);
     while (!Serial)
+    {
         delay(10);
+    }
 #endif
 
-    // Check for factory reset request (both buttons held)
-    checkForFactoryReset(rs);
+    checkForFactoryReset();
 
-    // Setup button handling
-    Input::Init(&camera);
-
-    Input::registerResetCallback(resetTest);
-
-    // Initialze BLE
-    if (!handler.InitBLE(&camera))
+    if (!Input::begin(camera))
     {
-        rs->set(Status::ERROR);
+        status.set(Status::Error);
+        return;
+    }
+    Input::registerResetCallback(resetBonds);
+
+    if (!BLEHandler::begin(camera))
+    {
+        status.set(Status::Error);
     }
 }
 
 void loop()
 {
-    // Netflix & Chill
     yield();
-
-    // Check for button presses
     Input::process(millis());
 }

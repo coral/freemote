@@ -1,0 +1,97 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+repo_dir=${0:A:h:h}
+openocd=${HOME}/.platformio/packages/tool-openocd/bin/openocd
+openocd_scripts=${HOME}/.platformio/packages/tool-openocd/openocd/scripts
+
+if [[ ! -x ${openocd} ]]; then
+    print -u2 "OpenOCD not found at ${openocd}"
+    exit 1
+fi
+
+run_openocd() {
+    ${openocd} \
+        -s ${openocd_scripts} \
+        -f interface/jlink.cfg \
+        -c 'transport select swd' \
+        -f target/nrf52.cfg \
+        -c 'adapter speed 1000' \
+        "$@"
+}
+
+print_registers() {
+    run_openocd \
+        -c 'init' \
+        -c 'halt' \
+        -c 'reg pc' \
+        -c 'reg sp' \
+        -c 'reg xPSR' \
+        -c 'mdw 0xE000ED04 1' \
+        -c 'mdw 0xE000ED28 5' \
+        -c 'resume' \
+        -c 'exit'
+}
+
+command=${1:-help}
+case ${command} in
+    flash)
+        environment=${2:-freemote-nrf52840}
+        firmware=${repo_dir}/.pio/build/${environment}/firmware.hex
+        if [[ ! -f ${firmware} ]]; then
+            print -u2 "Firmware not found: ${firmware}"
+            print -u2 "Build it first with: pio run -e ${environment}"
+            exit 1
+        fi
+        run_openocd \
+            -c 'init' \
+            -c 'halt' \
+            -c "program ${firmware} verify reset" \
+            -c 'exit'
+        ;;
+    check)
+        seconds=${2:-10}
+        if [[ ! ${seconds} =~ '^[0-9]+$' ]] || (( seconds > 60 )); then
+            print -u2 'check duration must be an integer from 0 to 60 seconds'
+            exit 2
+        fi
+        milliseconds=$((seconds * 1000))
+        run_openocd \
+            -c 'init' \
+            -c 'reset run' \
+            -c "sleep ${milliseconds}" \
+            -c 'halt' \
+            -c 'reg pc' \
+            -c 'reg sp' \
+            -c 'reg xPSR' \
+            -c 'mdw 0xE000ED04 1' \
+            -c 'mdw 0xE000ED28 5' \
+            -c 'resume' \
+            -c 'exit'
+        ;;
+    regs)
+        print_registers
+        ;;
+    halt)
+        run_openocd -c 'init' -c 'halt' -c 'exit'
+        ;;
+    resume)
+        run_openocd -c 'init' -c 'resume' -c 'exit'
+        ;;
+    help|-h|--help)
+        print 'Usage: scripts/jlink-nrf52840 <command> [argument]'
+        print
+        print 'Commands:'
+        print '  flash [environment]  Flash and verify a built PlatformIO image'
+        print '  check [seconds]       Reset, run, inspect faults, then resume (default: 10)'
+        print '  regs                  Inspect current registers/faults, then resume'
+        print '  halt                  Halt the target'
+        print '  resume                Resume the target'
+        ;;
+    *)
+        print -u2 "Unknown command: ${command}"
+        print -u2 'Run scripts/jlink-nrf52840 help for usage.'
+        exit 2
+        ;;
+esac
