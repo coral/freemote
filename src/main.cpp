@@ -42,6 +42,12 @@ void checkForFactoryReset(RemoteStatus *rs) {
             // Flash yellow for 5 seconds
             delay(5000);
 
+            // Bond storage lives on LittleFS, which is mounted by
+            // Bluefruit.begin(). The normal BLE initialization happens later
+            // in setup(), so initialize Bluefruit explicitly on this early
+            // factory-reset path before touching the bond store.
+            Bluefruit.begin(0, 1);
+
             // Clear BLE bonds
             Bluefruit.Central.clearBonds();
 
